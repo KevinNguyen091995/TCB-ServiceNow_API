@@ -1,6 +1,8 @@
 import pysnow
 import json
 import configparser
+import threading
+import asyncio
 import Database.DB_Connection as DC
 from datetime import datetime
 from time import time
@@ -65,7 +67,6 @@ def get_service_now_vul():
 
     #API Response
     for vul_data in responses.all():
-
         data = {
             'dns' : vul_data['dns'].strip(),
             'number' : vul_data['number'].strip(),
@@ -108,7 +109,7 @@ def get_entry_count_vulnerability():
     global vul_inactive_count
 
     #ServiveNow Response to call API
-    responses = vulnerability_entry.get(limit = 400)
+    responses = vulnerability_entry.get(limit = 800)
 
     #Reading all response data from API
     for response in responses.all():
@@ -123,31 +124,30 @@ def get_entry_count_vulnerability():
 #ASYNC Function to get vulnerability counts with multi-threading
 async def get_count_vulnerability(entry_offset, thread_number, total_threads):
     start = time()
-    #Splitting total vulnerability amount by thread amount to offset api call
-    thread_split = int(len(vul_entry_dict) / total_threads)
-    
+
     #Offset parameter from function arg to start record from api call
     offset_parameter = int(entry_offset)
 
     #Limits the parameter of the offset so get data from offset 0 to last record
-    limit_parameter = int(entry_offset + thread_split)
-
-    #Shows progress of thread if it's at the half point of api call to finish
-    half_point = (len(vul_entry_dict)/total_threads * thread_number) - ((len(vul_entry_dict)/total_threads) / 2)
+    limit_parameter = int(offset_parameter + (len(vul_entry_dict) / total_threads))
+    
+    #Do not add dupe data based on index since entries are split with float # and casting back to int
+    index_set = set()
 
     for index, (key) in enumerate(vul_entry_dict.keys()):
-        if(index == half_point):
-            print(f"Thread {thread_number} is halfway done on index {index}.")
-
-        if index <= (len(vul_entry_dict)/total_threads + offset_parameter) and index >= offset_parameter:
+        if index <= limit_parameter and index >= offset_parameter and index not in index_set:
             responses = vulnerability_item.get(query={'vulnerability' : key}, offset = offset_parameter, limit = limit_parameter)
         
             for response in responses.all():
-                if response['active'] == 'true':
+                if response['active'] == 'true' and index not in index_set:
                     vul_active_count[key] = vul_active_count.get(key) + 1
+                    print(f"{thread_number} : {index}")
+                    index_set.add(index)
 
-                if response['active'] == 'false':
+                if response['active'] == 'false' and index not in index_set:
                     vul_inactive_count[key] = vul_inactive_count.get(key) + 1
+                    print(f"{thread_number} : {index}")
+                    index_set.add(index)
 
         # if vul_inactive_count.get(key) != 0 or vul_active_count.get(key) != 0:
         #     query = f"INSERT INTO snow_vulnerability_count VALUES (?, ?, ?, ?, ?)"
@@ -157,6 +157,22 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
     
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
+
+def get_count_vulnerability_thread(*args):
+    asyncio.run(get_count_vulnerability(*args))
+
+def get_count_vulnerability_thread_call():
+    get_entry_count_vulnerability()
+
+    get_count_thread_1 = threading.Thread(target=get_count_vulnerability_thread, args=((len(vul_entry_dict) / 4) * 0, 1, 4))
+    get_count_thread_2 = threading.Thread(target=get_count_vulnerability_thread, args=((len(vul_entry_dict) / 4) * 1, 2, 4))
+    get_count_thread_3 = threading.Thread(target=get_count_vulnerability_thread, args=((len(vul_entry_dict) / 4) * 2, 3, 4))
+    get_count_thread_4 = threading.Thread(target=get_count_vulnerability_thread, args=((len(vul_entry_dict) / 4) * 3, 4, 4))
+
+    get_count_thread_1.start()
+    get_count_thread_2.start()
+    get_count_thread_3.start()
+    get_count_thread_4.start()
 
 
 def insert_to_database_data():
