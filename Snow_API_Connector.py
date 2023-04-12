@@ -16,7 +16,7 @@ now_date = datetime.now().strftime("%Y-%m-%d")
 
 #ConfigParser Setup
 config = configparser.ConfigParser()
-config.read('config_file.txt')
+config.read('config_snow.txt')
 
 #DEFAULT
 username = config.get('DEFAULT', 'username')
