@@ -1,0 +1,375 @@
+{
+    "name": "Charles Hayes",
+    "username": "chhaye",
+    "personal_device_name": "5420-1F27BK3",
+    "software_list": [
+        {
+            "software_name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.21005",
+            "publisher": "Microsoft",
+            "version": "12.0.21005.1",
+            "install_date": "",
+            "last_scanned": "2022-11-22",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2012 Redistributable (x86) - 11.0.60610",
+            "publisher": "Microsoft",
+            "version": "11.0.60610.1",
+            "install_date": "",
+            "last_scanned": "2022-11-22",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.40660",
+            "publisher": "Microsoft",
+            "version": "12.0.40660.0",
+            "install_date": "",
+            "last_scanned": "2022-11-22",
+            "active": "true"
+        },
+        {
+            "software_name": "Office 16 Click-to-Run Licensing Component",
+            "publisher": "Microsoft",
+            "version": "16.0.15831.20184",
+            "install_date": "2023-01-19 06:00:00",
+            "last_scanned": "2023-01-20",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Intune Management Extension",
+            "publisher": "Microsoft",
+            "version": "1.63.103.0",
+            "install_date": "2023-02-11 06:00:00",
+            "last_scanned": "2023-02-12",
+            "active": "true"
+        },
+        {
+            "software_name": "Nessus Agent (x64)",
+            "publisher": "Tenable",
+            "version": "10.1.4.20122",
+            "install_date": "2022-06-21 05:00:00",
+            "last_scanned": "2022-06-23",
+            "active": "true"
+        },
+        {
+            "software_name": "CrowdStrike Sensor Platform",
+            "publisher": "CrowdStrike",
+            "version": "6.39.15316.0",
+            "install_date": "2022-07-14 05:00:00",
+            "last_scanned": "2022-07-19",
+            "active": "true"
+        },
+        {
+            "software_name": "CrowdStrike Windows Sensor",
+            "publisher": "CrowdStrike",
+            "version": "6.51.16510.0",
+            "install_date": "",
+            "last_scanned": "2023-03-02",
+            "active": "true"
+        },
+        {
+            "software_name": "CrowdStrike Sensor Platform",
+            "publisher": "CrowdStrike",
+            "version": "6.51.16510.0",
+            "install_date": "2023-03-01 06:00:00",
+            "last_scanned": "2023-03-02",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge",
+            "publisher": "Microsoft",
+            "version": "110.0.1587.56",
+            "install_date": "2022-10-24 05:00:00",
+            "last_scanned": "2023-02-25",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge Update",
+            "publisher": "",
+            "version": "1.3.173.49",
+            "install_date": "",
+            "last_scanned": "2023-03-04",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge",
+            "publisher": "Microsoft",
+            "version": "110.0.1587.57",
+            "install_date": "2022-10-24 05:00:00",
+            "last_scanned": "2023-02-28",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft OneDrive",
+            "publisher": "Microsoft",
+            "version": "23.33.212.1",
+            "install_date": "",
+            "last_scanned": "2023-02-24",
+            "active": "true"
+        },
+        {
+            "software_name": "Trellix Data Exchange Layer for MA",
+            "publisher": "Trellix",
+            "version": "6.0.30906.0",
+            "install_date": "2023-01-30 06:00:00",
+            "last_scanned": "2023-01-31",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visio - en-us",
+            "publisher": "Microsoft",
+            "version": "16.0.15831.20252",
+            "install_date": "",
+            "last_scanned": "2023-01-20",
+            "active": "true"
+        },
+        {
+            "software_name": "TecMFA",
+            "publisher": "Tecnics Consulting",
+            "version": "6.1.1.0",
+            "install_date": "2022-06-09 05:00:00",
+            "last_scanned": "2022-06-10",
+            "active": "false"
+        },
+        {
+            "software_name": "Microsoft OneDrive",
+            "publisher": "Microsoft",
+            "version": "23.23.129.2",
+            "install_date": "",
+            "last_scanned": "2023-02-12",
+            "active": "true"
+        },
+        {
+            "software_name": "Cisco Jabber",
+            "publisher": "Cisco Systems",
+            "version": "14.1.1.56904",
+            "install_date": "2022-06-10 05:00:00",
+            "last_scanned": "2022-06-11",
+            "active": "true"
+        },
+        {
+            "software_name": "Office 16 Click-to-Run Licensing Component",
+            "publisher": "Microsoft",
+            "version": "16.0.15225.20356",
+            "install_date": "2022-07-14 05:00:00",
+            "last_scanned": "2022-07-15",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visio - en-us",
+            "publisher": "Microsoft",
+            "version": "16.0.15928.20282",
+            "install_date": "",
+            "last_scanned": "2023-03-02",
+            "active": "true"
+        },
+        {
+            "software_name": "Office 16 Click-to-Run Licensing Component",
+            "publisher": "Microsoft",
+            "version": "16.0.15928.20282",
+            "install_date": "2023-03-01 06:00:00",
+            "last_scanned": "2023-03-02",
+            "active": "true"
+        },
+        {
+            "software_name": "Adobe Acrobat (64-bit)",
+            "publisher": "Adobe",
+            "version": "22.3.20322",
+            "install_date": "2023-02-24 06:00:00",
+            "last_scanned": "2023-02-25",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2012 Redistributable (x64) - 11.0.60610",
+            "publisher": "Microsoft",
+            "version": "11.0.60610.1",
+            "install_date": "",
+            "last_scanned": "2022-11-22",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge WebView2 Runtime",
+            "publisher": "Microsoft",
+            "version": "103.0.1264.62",
+            "install_date": "2022-07-18 05:00:00",
+            "last_scanned": "2022-07-19",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2015-2019 Redistributable (x86) - 14.29.30139",
+            "publisher": "Microsoft",
+            "version": "14.29.30139.0",
+            "install_date": "",
+            "last_scanned": "2022-11-22",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft 365 Apps for enterprise - en-us",
+            "publisher": "Microsoft",
+            "version": "16.0.15831.20252",
+            "install_date": "",
+            "last_scanned": "2023-01-20",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2015-2019 Redistributable (x64) - 14.29.30139",
+            "publisher": "Microsoft",
+            "version": "14.29.30139.0",
+            "install_date": "",
+            "last_scanned": "2022-11-22",
+            "active": "true"
+        },
+        {
+            "software_name": "CrowdStrike Firmware Analysis",
+            "publisher": "CrowdStrike",
+            "version": "6.32.14651.0",
+            "install_date": "2022-07-14 05:00:00",
+            "last_scanned": "2022-07-19",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.40660",
+            "publisher": "Microsoft",
+            "version": "12.0.40660.0",
+            "install_date": "",
+            "last_scanned": "2022-11-22",
+            "active": "true"
+        },
+        {
+            "software_name": "Windows 10 Enterprise",
+            "publisher": "Microsoft",
+            "version": "",
+            "install_date": "",
+            "last_scanned": "",
+            "active": "true"
+        },
+        {
+            "software_name": "CrowdStrike Windows Sensor",
+            "publisher": "CrowdStrike",
+            "version": "6.39.15316.0",
+            "install_date": "",
+            "last_scanned": "2022-07-19",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge",
+            "publisher": "Microsoft",
+            "version": "103.0.1264.62",
+            "install_date": "2022-06-02 05:00:00",
+            "last_scanned": "2022-07-19",
+            "active": "true"
+        },
+        {
+            "software_name": "Google Chrome",
+            "publisher": "Google LLC",
+            "version": "110.0.5481.178",
+            "install_date": "2023-03-01 06:00:00",
+            "last_scanned": "2023-03-02",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft OneDrive",
+            "publisher": "Microsoft",
+            "version": "23.38.219.1",
+            "install_date": "",
+            "last_scanned": "2023-03-02",
+            "active": "true"
+        },
+        {
+            "software_name": "Google Chrome",
+            "publisher": "Google LLC",
+            "version": "103.0.5060.134",
+            "install_date": "2022-07-20 05:00:00",
+            "last_scanned": "2022-07-21",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge",
+            "publisher": "Microsoft",
+            "version": "110.0.1587.63",
+            "install_date": "2022-10-24 05:00:00",
+            "last_scanned": "2023-03-04",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge WebView2 Runtime",
+            "publisher": "Microsoft",
+            "version": "110.0.1587.57",
+            "install_date": "2023-02-27 06:00:00",
+            "last_scanned": "2023-02-28",
+            "active": "true"
+        },
+        {
+            "software_name": "Trellix Data Exchange Layer for MA",
+            "publisher": "Trellix",
+            "version": "6.0.30847.0",
+            "install_date": "2022-08-16 05:00:00",
+            "last_scanned": "2022-08-18",
+            "active": "true"
+        },
+        {
+            "software_name": "Trellix Agent",
+            "publisher": "Trellix",
+            "version": "5.7.8001",
+            "install_date": "2023-01-30 06:00:00",
+            "last_scanned": "2023-01-31",
+            "active": "true"
+        },
+        {
+            "software_name": "CrowdStrike Device Control",
+            "publisher": "CrowdStrike",
+            "version": "6.35.14960.0",
+            "install_date": "2022-07-14 05:00:00",
+            "last_scanned": "2022-07-19",
+            "active": "true"
+        },
+        {
+            "software_name": "Intel\u00ae Integrated Sensor Solution",
+            "publisher": "Intel",
+            "version": "3.10.100.4446",
+            "install_date": "",
+            "last_scanned": "2022-11-22",
+            "active": "true"
+        },
+        {
+            "software_name": "Trellix Agent",
+            "publisher": "Trellix",
+            "version": "5.7.7000",
+            "install_date": "2022-08-16 05:00:00",
+            "last_scanned": "2022-08-18",
+            "active": "true"
+        },
+        {
+            "software_name": "ClickShare Desktop App Machine-Wide Installer",
+            "publisher": "Barco N.V",
+            "version": "4.25.0.15",
+            "install_date": "2022-11-16 06:00:00",
+            "last_scanned": "2022-11-22",
+            "active": "true"
+        },
+        {
+            "software_name": "Office 16 Click-to-Run Extensibility Component",
+            "publisher": "Microsoft",
+            "version": "16.0.15225.20150",
+            "install_date": "2022-07-14 05:00:00",
+            "last_scanned": "2022-07-15",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft 365 Apps for enterprise - en-us",
+            "publisher": "Microsoft",
+            "version": "16.0.15928.20282",
+            "install_date": "",
+            "last_scanned": "2023-03-02",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft OneDrive",
+            "publisher": "Microsoft",
+            "version": "23.43.226.1",
+            "install_date": "",
+            "last_scanned": "2023-03-09",
+            "active": "true"
+        }
+    ]
+}

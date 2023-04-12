@@ -1,0 +1,14 @@
+{
+    "name": "Chad Young",
+    "user_name": "chyoun",
+    "sys_user_id": "f483cf7a1bc08998c17ecbbe034bcbbc",
+    "email": "Chad.Young@texascapitalbank.com",
+    "last_login_time": "2023-03-07 20:30:34",
+    "sys_id": "a38381221b6441501cfc968f034bcbb4",
+    "personal_device_name": "5420-FDLWBK3",
+    "fqdn": "5420-fdlwbk3.tcbna.net",
+    "ip_address": "10.136.192.60",
+    "default_gate": "10.136.192.1",
+    "os_version": "10.0.19044",
+    "last_login_id": "chyoun"
+}

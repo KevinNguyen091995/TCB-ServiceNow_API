@@ -1,0 +1,14 @@
+{
+    "name": "Ruben Martinez",
+    "user_name": "rumart",
+    "sys_user_id": "7b28e80a478d999069f56542736d43c1",
+    "email": "Ruben.Martinez@texascapitalbank.com",
+    "last_login_time": "2023-03-08 14:09:40",
+    "sys_id": "8fb29cc29781dd905cbeb4221153af88",
+    "personal_device_name": "5420-63W4SQ3",
+    "fqdn": "5420-63w4sq3.tcbna.net",
+    "ip_address": "10.136.192.52",
+    "default_gate": "10.136.192.1",
+    "os_version": "10.0.19044",
+    "last_login_id": "rumart"
+}

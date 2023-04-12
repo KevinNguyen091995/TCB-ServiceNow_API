@@ -1,0 +1,14 @@
+{
+    "name": "Carol Weaver",
+    "user_name": "caweav",
+    "sys_user_id": "7ea11fd01ba53410f1301f861a4bcb16",
+    "email": "Carol.Weaver@texascapitalbank.com",
+    "last_login_time": "2023-02-10 13:32:29",
+    "sys_id": "db2235191b7378141cfc968f034bcbaa",
+    "personal_device_name": "5420-2WHR1J3",
+    "fqdn": "5420-2whr1j3.tcbna.net",
+    "ip_address": "10.136.190.62",
+    "default_gate": "10.136.190.1",
+    "os_version": "10.0.19044",
+    "last_login_id": "caweav"
+}

@@ -1,0 +1,775 @@
+{
+    "name": "Carol Weaver",
+    "username": "caweav",
+    "personal_device_name": "5420-2WHR1J3",
+    "software_list": [
+        {
+            "software_name": "Microsoft Visual C++ 2019 X64 Minimum Runtime -",
+            "publisher": "Microsoft",
+            "version": "14.29.30139",
+            "install_date": "2022-01-18 06:00:00",
+            "last_scanned": "2022-01-20",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge WebView2 Runtime",
+            "publisher": "Microsoft",
+            "version": "110.0.1587.63",
+            "install_date": "2023-03-06 06:00:00",
+            "last_scanned": "2023-03-07",
+            "active": "true"
+        },
+        {
+            "software_name": "CrowdStrike Device Control",
+            "publisher": "CrowdStrike",
+            "version": "6.32.14651.0",
+            "install_date": "2021-12-09 06:00:00",
+            "last_scanned": "2021-12-10",
+            "active": "true"
+        },
+        {
+            "software_name": "Phish Alert",
+            "publisher": "KnowBe4",
+            "version": "1.4.85",
+            "install_date": "2022-04-19 05:00:00",
+            "last_scanned": "2022-04-20",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2012 x86 Additional Runtime -",
+            "publisher": "Microsoft",
+            "version": "11.0.60610",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Policy Platform",
+            "publisher": "Microsoft",
+            "version": "68.1.1010.0",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2012 x86 Additional Runtime -",
+            "publisher": "Microsoft",
+            "version": "11.0.61030",
+            "install_date": "2022-08-29 05:00:00",
+            "last_scanned": "2022-08-31",
+            "active": "true"
+        },
+        {
+            "software_name": "Fiserv Nautilus Unity Client 20 (Prod)",
+            "publisher": "Fiserv",
+            "version": "20.3.23.1000",
+            "install_date": "2022-08-29 05:00:00",
+            "last_scanned": "2022-08-31",
+            "active": "false"
+        },
+        {
+            "software_name": "PhishAlarm Outlook Add-In",
+            "publisher": "Proofpoint",
+            "version": "3.2.50.0",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Intel(R) LMS",
+            "publisher": "Intel",
+            "version": "1.0",
+            "install_date": "2022-12-09 06:00:00",
+            "last_scanned": "2022-12-13",
+            "active": "true"
+        },
+        {
+            "software_name": "Intel(R) Wireless Manageability Driver",
+            "publisher": "Intel",
+            "version": "1.0",
+            "install_date": "2022-12-09 06:00:00",
+            "last_scanned": "2022-12-13",
+            "active": "true"
+        },
+        {
+            "software_name": "Fiserv Nautilus Client 20",
+            "publisher": "Fiserv",
+            "version": "20.3.33.1000",
+            "install_date": "2022-08-30 05:00:00",
+            "last_scanned": "2022-08-31",
+            "active": "false"
+        },
+        {
+            "software_name": "Microsoft Visio Viewer 2016",
+            "publisher": "Microsoft",
+            "version": "16.0.4339.1001",
+            "install_date": "2021-12-09 06:00:00",
+            "last_scanned": "2021-12-10",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2012 x86 Minimum Runtime -",
+            "publisher": "Microsoft",
+            "version": "11.0.60610",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2008 Redistributable - x86",
+            "publisher": "Microsoft",
+            "version": "9.0.30729.4148",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2012 Redistributable (x64) - 11.0.61030",
+            "publisher": "Microsoft",
+            "version": "11.0.61030.0",
+            "install_date": "",
+            "last_scanned": "2022-08-31",
+            "active": "true"
+        },
+        {
+            "software_name": "Cisco AnyConnect ISE Posture Module",
+            "publisher": "Cisco Systems",
+            "version": "4.10.4065",
+            "install_date": "2022-03-02 06:00:00",
+            "last_scanned": "2022-03-04",
+            "active": "true"
+        },
+        {
+            "software_name": "Nessus Agent (x64)",
+            "publisher": "Tenable",
+            "version": "10.1.4.20122",
+            "install_date": "2022-06-17 05:00:00",
+            "last_scanned": "2022-06-18",
+            "active": "true"
+        },
+        {
+            "software_name": "Cisco AnyConnect Secure Mobility Client",
+            "publisher": "Cisco Systems",
+            "version": "4.10.4065",
+            "install_date": "2022-03-02 06:00:00",
+            "last_scanned": "2022-03-04",
+            "active": "true"
+        },
+        {
+            "software_name": "ClickShare Desktop App Machine-Wide Installer",
+            "publisher": "Barco N.V",
+            "version": "4.25.0.15",
+            "install_date": "2022-11-30 06:00:00",
+            "last_scanned": "2022-12-01",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge WebView2 Runtime",
+            "publisher": "Microsoft",
+            "version": "110.0.1587.50",
+            "install_date": "2023-02-21 06:00:00",
+            "last_scanned": "2023-02-22",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2012 x64 Minimum Runtime -",
+            "publisher": "Microsoft",
+            "version": "11.0.60610",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Trellix Agent",
+            "publisher": "Trellix",
+            "version": "5.7.8001",
+            "install_date": "2023-01-31 06:00:00",
+            "last_scanned": "2023-02-02",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2013 x86 Minimum Runtime -",
+            "publisher": "Microsoft",
+            "version": "12.0.40660",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2019 X64 Additional Runtime -",
+            "publisher": "Microsoft",
+            "version": "14.29.30139",
+            "install_date": "2022-01-18 06:00:00",
+            "last_scanned": "2022-01-20",
+            "active": "true"
+        },
+        {
+            "software_name": "Cisco AnyConnect ISE Compliance Module",
+            "publisher": "Cisco Systems",
+            "version": "4.3.215.2048",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Dell SupportAssist OS Recovery Plugin for Dell Update",
+            "publisher": "Dell",
+            "version": "5.5.1.16143",
+            "install_date": "2022-05-19 05:00:00",
+            "last_scanned": "2022-05-20",
+            "active": "true"
+        },
+        {
+            "software_name": "Dynamic Application Loader Host Interface Service",
+            "publisher": "Intel",
+            "version": "1.0",
+            "install_date": "2022-12-09 06:00:00",
+            "last_scanned": "2022-12-13",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2012 x64 Additional Runtime -",
+            "publisher": "Microsoft",
+            "version": "11.0.61030",
+            "install_date": "2022-08-29 05:00:00",
+            "last_scanned": "2022-08-31",
+            "active": "true"
+        },
+        {
+            "software_name": "McAfee DLP Endpoint",
+            "publisher": "McAfee, LLC",
+            "version": "11.9.100.182",
+            "install_date": "2022-08-30 05:00:00",
+            "last_scanned": "2022-08-31",
+            "active": "true"
+        },
+        {
+            "software_name": "Intel(R) ME WMI Provider",
+            "publisher": "Intel",
+            "version": "1.0",
+            "install_date": "2022-12-09 06:00:00",
+            "last_scanned": "2022-12-13",
+            "active": "true"
+        },
+        {
+            "software_name": "Cisco AnyConnect ISE Posture Module",
+            "publisher": "Cisco Systems",
+            "version": "4.10.93",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Teams Machine-Wide Installer",
+            "publisher": "Microsoft",
+            "version": "1.4.0.19572",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge WebView2 Runtime",
+            "publisher": "Microsoft",
+            "version": "110.0.1587.56",
+            "install_date": "2023-02-27 06:00:00",
+            "last_scanned": "2023-02-28",
+            "active": "true"
+        },
+        {
+            "software_name": "CrowdStrike Sensor Platform",
+            "publisher": "CrowdStrike",
+            "version": "6.31.14505.0",
+            "install_date": "2021-12-09 06:00:00",
+            "last_scanned": "2021-12-10",
+            "active": "true"
+        },
+        {
+            "software_name": "Intel\u00ae Software Installer",
+            "publisher": "Intel",
+            "version": "22.100.0.3",
+            "install_date": "",
+            "last_scanned": "2022-05-20",
+            "active": "true"
+        },
+        {
+            "software_name": "Realtek Audio Driver",
+            "publisher": "Realtek Semiconductor",
+            "version": "6.0.9418.1",
+            "install_date": "2022-12-09 06:00:00",
+            "last_scanned": "2022-12-13",
+            "active": "true"
+        },
+        {
+            "software_name": "Intel(R) Management Engine Components",
+            "publisher": "Intel",
+            "version": "1.0",
+            "install_date": "2022-12-09 06:00:00",
+            "last_scanned": "2022-12-13",
+            "active": "true"
+        },
+        {
+            "software_name": "McAfee Data Exchange Layer for MA",
+            "publisher": "McAfee LLC",
+            "version": "6.0.30551.0",
+            "install_date": "2022-01-28 06:00:00",
+            "last_scanned": "2022-02-01",
+            "active": "true"
+        },
+        {
+            "software_name": "Realtek USB Ethernet Controller All-In-One Windows Driver",
+            "publisher": "Realtek",
+            "version": "10.54.608.2022",
+            "install_date": "2022-12-09 06:00:00",
+            "last_scanned": "2022-12-13",
+            "active": "true"
+        },
+        {
+            "software_name": "CrowdStrike Windows Sensor",
+            "publisher": "CrowdStrike",
+            "version": "6.50.16410.0",
+            "install_date": "",
+            "last_scanned": "2023-02-16",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge Update",
+            "publisher": "",
+            "version": "1.3.173.45",
+            "install_date": "",
+            "last_scanned": "2023-02-11",
+            "active": "true"
+        },
+        {
+            "software_name": "Dell Command | Update for Windows Universal",
+            "publisher": "Dell",
+            "version": "4.8.0",
+            "install_date": "2023-02-15 06:00:00",
+            "last_scanned": "2023-02-16",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge",
+            "publisher": "Microsoft",
+            "version": "110.0.1587.63",
+            "install_date": "2022-10-07 05:00:00",
+            "last_scanned": "2023-03-07",
+            "active": "true"
+        },
+        {
+            "software_name": "Cisco Webex Meetings",
+            "publisher": "Cisco Webex LLC",
+            "version": "43.2.1.18",
+            "install_date": "2023-01-24 06:00:00",
+            "last_scanned": "2023-01-25",
+            "active": "true"
+        },
+        {
+            "software_name": "McAfee Client Proxy",
+            "publisher": "McAfee",
+            "version": "4.0.0.193",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2019 X86 Additional Runtime -",
+            "publisher": "Microsoft",
+            "version": "14.29.30139",
+            "install_date": "2022-01-18 06:00:00",
+            "last_scanned": "2022-01-20",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2010  x86 Redistributable -",
+            "publisher": "Microsoft",
+            "version": "10.0.40219",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Nautilus Web ActiveX Controls",
+            "publisher": "Fiserv",
+            "version": "20.3.2.1000",
+            "install_date": "2022-08-29 05:00:00",
+            "last_scanned": "2022-08-31",
+            "active": "false"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2012 x64 Minimum Runtime -",
+            "publisher": "Microsoft",
+            "version": "11.0.61030",
+            "install_date": "2022-08-29 05:00:00",
+            "last_scanned": "2022-08-31",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft ODBC Driver 17 for SQL Server",
+            "publisher": "Microsoft",
+            "version": "17.5.2.1",
+            "install_date": "2022-08-30 05:00:00",
+            "last_scanned": "2022-08-31",
+            "active": "true"
+        },
+        {
+            "software_name": "Dell SupportAssist OS Recovery Plugin for Dell Update",
+            "publisher": "Dell",
+            "version": "5.5.4.16189",
+            "install_date": "2022-12-09 06:00:00",
+            "last_scanned": "2022-12-13",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge",
+            "publisher": "Microsoft",
+            "version": "110.0.1587.57",
+            "install_date": "2022-10-07 05:00:00",
+            "last_scanned": "2023-02-28",
+            "active": "true"
+        },
+        {
+            "software_name": "CrowdStrike Firmware Analysis",
+            "publisher": "CrowdStrike",
+            "version": "6.32.14651.0",
+            "install_date": "2022-10-17 05:00:00",
+            "last_scanned": "2022-10-19",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft OneDrive",
+            "publisher": "Microsoft",
+            "version": "23.28.205.2",
+            "install_date": "",
+            "last_scanned": "2023-02-28",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2010  x64 Redistributable -",
+            "publisher": "Microsoft",
+            "version": "10.0.40219",
+            "install_date": "2022-08-30 05:00:00",
+            "last_scanned": "2022-08-31",
+            "active": "true"
+        },
+        {
+            "software_name": "Dell ControlVault Host Components Installer 64 bit",
+            "publisher": "Broadcom Limited",
+            "version": "5.9.8.17",
+            "install_date": "2022-05-19 05:00:00",
+            "last_scanned": "2022-05-20",
+            "active": "true"
+        },
+        {
+            "software_name": "TbtLegacyPlug",
+            "publisher": "elrazdah",
+            "version": "18.0",
+            "install_date": "2022-05-19 05:00:00",
+            "last_scanned": "2022-05-20",
+            "active": "false"
+        },
+        {
+            "software_name": "Microsoft OneDrive",
+            "publisher": "Microsoft",
+            "version": "23.23.129.2",
+            "install_date": "",
+            "last_scanned": "2023-02-19",
+            "active": "true"
+        },
+        {
+            "software_name": "Intel(R) Wireless Manageability Driver Extension",
+            "publisher": "Intel",
+            "version": "1.0",
+            "install_date": "2022-12-09 06:00:00",
+            "last_scanned": "2022-12-13",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2012 Redistributable (x86) - 11.0.61030",
+            "publisher": "Microsoft",
+            "version": "11.0.61030.0",
+            "install_date": "",
+            "last_scanned": "2022-08-31",
+            "active": "true"
+        },
+        {
+            "software_name": "Okta IE plugin",
+            "publisher": "Okta",
+            "version": "6.5.0",
+            "install_date": "2021-12-14 06:00:00",
+            "last_scanned": "2021-12-15",
+            "active": "true"
+        },
+        {
+            "software_name": "Configuration Manager Client",
+            "publisher": "Microsoft",
+            "version": "5.0.9049.1000",
+            "install_date": "2021-12-09 06:00:00",
+            "last_scanned": "2021-12-14",
+            "active": "true"
+        },
+        {
+            "software_name": "Configuration Manager Client",
+            "publisher": "Microsoft",
+            "version": "5.0.9088.1000",
+            "install_date": "2022-10-06 05:00:00",
+            "last_scanned": "2022-10-07",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft OneDrive",
+            "publisher": "Microsoft",
+            "version": "23.38.219.1",
+            "install_date": "",
+            "last_scanned": "2023-03-09",
+            "active": "true"
+        },
+        {
+            "software_name": "McAfee File and Removable Media Protection",
+            "publisher": "McAfee",
+            "version": "5.4.2.106",
+            "install_date": "2022-08-23 05:00:00",
+            "last_scanned": "2022-08-24",
+            "active": "true"
+        },
+        {
+            "software_name": "MDOP MBAM",
+            "publisher": "Microsoft",
+            "version": "2.5.1100.0",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2019 X86 Minimum Runtime -",
+            "publisher": "Microsoft",
+            "version": "14.29.30139",
+            "install_date": "2022-01-18 06:00:00",
+            "last_scanned": "2022-01-20",
+            "active": "true"
+        },
+        {
+            "software_name": "Privilege Management for Windows (x64)",
+            "publisher": "BeyondTrust",
+            "version": "21.1.133.0",
+            "install_date": "2022-01-12 06:00:00",
+            "last_scanned": "2022-01-13",
+            "active": "true"
+        },
+        {
+            "software_name": "Trellix Data Exchange Layer for MA",
+            "publisher": "Trellix",
+            "version": "6.0.30906.0",
+            "install_date": "2023-01-31 06:00:00",
+            "last_scanned": "2023-02-02",
+            "active": "true"
+        },
+        {
+            "software_name": "Proofpoint Encryption Plug-in for Microsoft Outlook",
+            "publisher": "Proofpoint",
+            "version": "1.3.9.5",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2008 Redistributable - x64",
+            "publisher": "Microsoft",
+            "version": "9.0.30729.4148",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge",
+            "publisher": "Microsoft",
+            "version": "110.0.1587.49",
+            "install_date": "2022-10-07 05:00:00",
+            "last_scanned": "2023-02-19",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2013 x86 Additional Runtime -",
+            "publisher": "Microsoft",
+            "version": "12.0.40660",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Rapid7 Insight Agent",
+            "publisher": "Rapid7",
+            "version": "3.1.1.1",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Intel(R) SOL LMS Extension",
+            "publisher": "Intel",
+            "version": "1.0",
+            "install_date": "2022-12-09 06:00:00",
+            "last_scanned": "2022-12-13",
+            "active": "true"
+        },
+        {
+            "software_name": "Adobe Acrobat (64-bit)",
+            "publisher": "Adobe",
+            "version": "22.3.20322",
+            "install_date": "2023-02-24 06:00:00",
+            "last_scanned": "2023-02-28",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2013 x64 Additional Runtime -",
+            "publisher": "Microsoft",
+            "version": "12.0.40660",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Veritas Enterprise Vault Outlook Add-in (x64) 12.3.2.1525",
+            "publisher": "Veritas Technologies LLC",
+            "version": "12.3.9717",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Intel(R) Management Engine Driver",
+            "publisher": "Intel",
+            "version": "1.0",
+            "install_date": "2022-12-09 06:00:00",
+            "last_scanned": "2022-12-13",
+            "active": "true"
+        },
+        {
+            "software_name": "dch_setup",
+            "publisher": "elrazdah",
+            "version": "1.47.0",
+            "install_date": "2022-05-19 05:00:00",
+            "last_scanned": "2022-05-20",
+            "active": "false"
+        },
+        {
+            "software_name": "Cisco Jabber",
+            "publisher": "Cisco Systems",
+            "version": "14.1.2.57135",
+            "install_date": "2022-08-30 05:00:00",
+            "last_scanned": "2022-08-31",
+            "active": "true"
+        },
+        {
+            "software_name": "Thunderbolt\u2122 Software",
+            "publisher": "Intel",
+            "version": "1.47.0",
+            "install_date": "",
+            "last_scanned": "2022-05-20",
+            "active": "true"
+        },
+        {
+            "software_name": "Intel\u00ae Software Installer",
+            "publisher": "Intel",
+            "version": "22.170.2.1",
+            "install_date": "",
+            "last_scanned": "2022-12-13",
+            "active": "true"
+        },
+        {
+            "software_name": "Dell Command | Update",
+            "publisher": "Dell",
+            "version": "4.4.0",
+            "install_date": "2021-12-09 06:00:00",
+            "last_scanned": "2021-12-10",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2012 x64 Additional Runtime -",
+            "publisher": "Microsoft",
+            "version": "11.0.60610",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2013 x64 Minimum Runtime -",
+            "publisher": "Microsoft",
+            "version": "12.0.40660",
+            "install_date": "2021-12-04 06:00:00",
+            "last_scanned": "2021-12-05",
+            "active": "true"
+        },
+        {
+            "software_name": "McAfee Agent",
+            "publisher": "McAfee, LLC",
+            "version": "5.7.5001",
+            "install_date": "2022-01-28 06:00:00",
+            "last_scanned": "2022-02-01",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Visual C++ 2012 x86 Minimum Runtime -",
+            "publisher": "Microsoft",
+            "version": "11.0.61030",
+            "install_date": "2022-08-29 05:00:00",
+            "last_scanned": "2022-08-31",
+            "active": "true"
+        },
+        {
+            "software_name": "Office 16 Click-to-Run Extensibility Component",
+            "publisher": "Microsoft",
+            "version": "16.0.15726.20202",
+            "install_date": "2022-12-29 06:00:00",
+            "last_scanned": "2022-12-30",
+            "active": "true"
+        },
+        {
+            "software_name": "Dell Command | Update",
+            "publisher": "Dell",
+            "version": "4.5.0",
+            "install_date": "2022-04-05 05:00:00",
+            "last_scanned": "2022-04-06",
+            "active": "true"
+        },
+        {
+            "software_name": "McAfee DLP Endpoint",
+            "publisher": "McAfee, LLC",
+            "version": "11.6.400.342",
+            "install_date": "2022-03-02 06:00:00",
+            "last_scanned": "2022-03-04",
+            "active": "true"
+        },
+        {
+            "software_name": "CrowdStrike Sensor Platform",
+            "publisher": "CrowdStrike",
+            "version": "6.50.16410.0",
+            "install_date": "2023-02-15 06:00:00",
+            "last_scanned": "2023-02-16",
+            "active": "true"
+        },
+        {
+            "software_name": "Microsoft Edge WebView2 Runtime",
+            "publisher": "Microsoft",
+            "version": "110.0.1587.46",
+            "install_date": "2023-02-17 06:00:00",
+            "last_scanned": "2023-02-18",
+            "active": "true"
+        },
+        {
+            "software_name": "CrowdStrike Device Control",
+            "publisher": "CrowdStrike",
+            "version": "6.35.14960.0",
+            "install_date": "2022-10-17 05:00:00",
+            "last_scanned": "2022-10-19",
+            "active": "true"
+        },
+        {
+            "software_name": "Windows 10 Enterprise",
+            "publisher": "Microsoft",
+            "version": "",
+            "install_date": "",
+            "last_scanned": "",
+            "active": "true"
+        }
+    ]
+}

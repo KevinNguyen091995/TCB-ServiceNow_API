@@ -1,0 +1,14 @@
+{
+    "name": "Charles Hayes",
+    "user_name": "chhaye",
+    "sys_user_id": "8b62aeb597b01d105cbeb4221153af95",
+    "email": "Charles.Hayes@texascapitalbank.com",
+    "last_login_time": "2023-03-09 16:40:30",
+    "sys_id": "ddb60a371b248d50c17ecbbe034bcb1d",
+    "personal_device_name": "5420-1F27BK3",
+    "fqdn": "5420-1f27bk3.tcbna.net",
+    "ip_address": "10.10.82.227",
+    "default_gate": "10.10.82.1",
+    "os_version": "10.0.19044",
+    "last_login_id": "chhaye"
+}
