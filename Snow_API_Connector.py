@@ -109,7 +109,7 @@ def get_entry_count_vulnerability():
     global vul_inactive_count
 
     #ServiveNow Response to call API
-    responses = vulnerability_entry.get(limit = 800)
+    responses = vulnerability_entry.get(limit = 45)
 
     #Reading all response data from API
     for response in responses.all():
@@ -123,6 +123,8 @@ def get_entry_count_vulnerability():
 
 #ASYNC Function to get vulnerability counts with multi-threading
 async def get_count_vulnerability(entry_offset, thread_number, total_threads):
+    global index_set
+
     start = time()
 
     #Offset parameter from function arg to start record from api call
@@ -141,12 +143,10 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
             for response in responses.all():
                 if response['active'] == 'true' and index not in index_set:
                     vul_active_count[key] = vul_active_count.get(key) + 1
-                    print(f"{thread_number} : {index}")
                     index_set.add(index)
 
                 if response['active'] == 'false' and index not in index_set:
                     vul_inactive_count[key] = vul_inactive_count.get(key) + 1
-                    print(f"{thread_number} : {index}")
                     index_set.add(index)
 
         # if vul_inactive_count.get(key) != 0 or vul_active_count.get(key) != 0:
@@ -158,16 +158,16 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
 
-def get_count_vulnerability_thread(*args):
-    asyncio.run(get_count_vulnerability(*args))
+def callback_thread(function, *args):
+    asyncio.run(function(*args))
 
 def get_count_vulnerability_thread_call():
     get_entry_count_vulnerability()
 
-    get_count_thread_1 = threading.Thread(target=get_count_vulnerability_thread, args=((len(vul_entry_dict) / 4) * 0, 1, 4))
-    get_count_thread_2 = threading.Thread(target=get_count_vulnerability_thread, args=((len(vul_entry_dict) / 4) * 1, 2, 4))
-    get_count_thread_3 = threading.Thread(target=get_count_vulnerability_thread, args=((len(vul_entry_dict) / 4) * 2, 3, 4))
-    get_count_thread_4 = threading.Thread(target=get_count_vulnerability_thread, args=((len(vul_entry_dict) / 4) * 3, 4, 4))
+    get_count_thread_1 = threading.Thread(target=callback_thread, args=(get_count_vulnerability, (len(vul_entry_dict) / 4) * 0, 1, 4))
+    get_count_thread_2 = threading.Thread(target=callback_thread, args=(get_count_vulnerability, (len(vul_entry_dict) / 4) * 1, 2, 4))
+    get_count_thread_3 = threading.Thread(target=callback_thread, args=(get_count_vulnerability, (len(vul_entry_dict) / 4) * 2, 3, 4))
+    get_count_thread_4 = threading.Thread(target=callback_thread, args=(get_count_vulnerability, (len(vul_entry_dict) / 4) * 3, 4, 4))
 
     get_count_thread_1.start()
     get_count_thread_2.start()
