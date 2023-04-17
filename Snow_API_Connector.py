@@ -4,8 +4,22 @@ import configparser
 import threading
 import asyncio
 import Database.DB_Connection as DC
+from cryptography.fernet import Fernet
 from datetime import datetime
 from time import time
+
+#ConfigParser Setup
+config = configparser.ConfigParser()
+config.read('config_snow.txt')
+
+#DEFAULT
+username = config.get('DEFAULT', 'username')
+password = config.get('DEFAULT', 'password')
+key = config.get('DEFAULT', 'key')
+instance_dev = config.get('DEFAULT', 'instance_dev')
+instance_test = config.get('DEFAULT', 'instance_test')
+instance = config.get('DEFAULT', 'instance')
+user_list = config.get('USER', 'users').split(",")
 
 #Data
 data = dict()
@@ -15,18 +29,7 @@ vul_entry_dict = dict()
 vul_active_count = dict()
 vul_inactive_count = dict()
 now_date = datetime.now().strftime("%Y-%m-%d")
-
-#ConfigParser Setup
-config = configparser.ConfigParser()
-config.read('config_snow.txt')
-
-#DEFAULT
-username = config.get('DEFAULT', 'username')
-password = config.get('DEFAULT', 'password')
-instance_dev = config.get('DEFAULT', 'instance_dev')
-instance_test = config.get('DEFAULT', 'instance_test')
-instance = config.get('DEFAULT', 'instance')
-user_list = config.get('USER', 'users').split(",")
+data_key = Fernet(key)
 
 # Create client object
 c = pysnow.Client(instance=instance, user=username, password=password)
@@ -41,6 +44,7 @@ vulnerability_item_api = config.get('API', 'vulnerability_item')
 vulnerability_entry_api = config.get('API', 'vulnerability_entry')
 sys_object_api = config.get('API', 'sys_object')
 sys_user_group_api = config.get('API', 'sys_user_group')
+cmdb_ci_server_api = config.get("API", 'cmdb_ci_server')
 
 # Define a resource, here we'll use the incident table API
 personal_device = c.resource(api_path=personal_device_api)
@@ -52,6 +56,7 @@ sys_object = c.resource(api_path=sys_object_api)
 vulnerability_item = c.resource(api_path=vulnerability_item_api)
 vulnerability_entry = c.resource(api_path=vulnerability_entry_api)
 sys_user_group = c.resource(api_path=sys_user_group_api)
+cmdb_ci_server_list = c.resource(api_path=cmdb_ci_server_api)
 
 """
 Function to run API calls for a certain vul and grabs data of owner of vul
@@ -136,7 +141,7 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
     #Do not add dupe data based on index since entries are split with float # and casting back to int
     index_set = set()
 
-    for index, (key) in enumerate(vul_entry_dict.keys()):
+    for index, (key, value) in enumerate(vul_entry_dict.keys()):
         if index <= limit_parameter and index >= offset_parameter and index not in index_set:
             responses = vulnerability_item.get(query={'vulnerability' : key}, offset = offset_parameter, limit = limit_parameter)
         
@@ -149,11 +154,11 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
                     vul_inactive_count[key] = vul_inactive_count.get(key) + 1
                     index_set.add(index)
 
-        # if vul_inactive_count.get(key) != 0 or vul_active_count.get(key) != 0:
-        #     query = f"INSERT INTO snow_vulnerability_count VALUES (?, ?, ?, ?, ?)"
-        #     parameter = key, value, vul_active_count.get(key), vul_inactive_count.get(key), now_date
-        #     DC.cursor.execute(query, parameter)
-        #     DC.cnxn.commit()
+        if vul_inactive_count.get(key) != 0 or vul_active_count.get(key) != 0:
+            query = f"INSERT INTO snow_vulnerability_count VALUES (?, ?, ?, ?, ?)"
+            parameter = key, value, vul_active_count.get(key), vul_inactive_count.get(key), now_date
+            DC.cursor.execute(query, parameter)
+            DC.cnxn.commit()
     
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
@@ -196,50 +201,39 @@ def check_owners(api, query_builder_field):
 
     return data
 
+def get_cmdb_server():
+    operational_status_mapping = {
+        '1' : 'Operational',
+        '2' : 'Non-Operational',
+        '6' : 'Retired'
+    }
+
+    queryBuilder = pysnow.QueryBuilder().field('ip_address').is_not_empty().AND().field('ip_address').not_equals('0.0.0.0')
+
+    responses = cmdb_ci_server_list.get(query=queryBuilder)
+
+    for response in responses.all():
+        encrypt_server_name = data_key.encrypt(bytes(response['name'].replace("formerly: ", "").encode()))
+        encrypt_ip = data_key.encrypt(bytes(response['ip_address'].encode()))
+
+        #DECODE USING
+        #data_key.decrypt(encrypt_server_name).decode().replace("formerly: ", "")
+        #data_key.decrypt(encrypt_ip).decode().replace("formerly: ", "")
+
+        data['server_name'] = encrypt_server_name
+        data['ip_address'] = encrypt_ip
+        data['server_operating_system'] = response['os']
+        data['operational_status'] = operational_status_mapping.get(response['operational_status']).replace("formerly: ", "")
+        data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
+
+        DC.cursor.execute(f"INSERT INTO snow_server_list VALUES(?,?,?,?,?)", data['server_name'], data['ip_address'], data['server_operating_system'], data['operational_status'], data['server_model_id'])
+        DC.cnxn.commit()
+
 def get_data_equals(api, query_builder_field = "", query_builder_search = ""):
     global data
-    global software_data
     global owners
 
     responses = api.get(query= {query_builder_field: query_builder_search})
-
-    if api == sys_user:
-        for user_data in responses.all():
-            data['name'] = user_data['name']
-            data['user_name'] = user_data['user_name']
-            data['sys_user_id'] = user_data['sys_id']
-            data['email'] = user_data['email']
-            data['last_login_time'] = user_data['last_login_time']
-
-    if api == personal_device:
-        for device_data in responses.all():
-            data['sys_id'] = device_data['sys_id']
-            data['personal_device_name'] = device_data['name']
-            data['fqdn'] = device_data['fqdn']
-            data['ip_address'] = device_data['ip_address']
-            data['default_gate'] = device_data['default_gateway']
-            data['os_version'] = device_data['os_version']
-            data['last_login_id'] = device_data['u_last_logged_on_id']
-
-    if api == software_install:
-        software['name'] = data['name']
-        software['username'] = data['user_name']
-        software['personal_device_name'] = data['personal_device_name']
-        software["software_list"] = list()
-
-        for software_data in responses.all():
-            software["software_list"].append({
-            'software_name': software_data['display_name'],
-            'publisher' : software_data['normalized_publisher'],
-            'version' : software_data['normalized_version'],
-            'install_date' : software_data['install_date'],
-            'last_scanned' : software_data['last_scanned'],
-            'active' : software_data['active']
-            })
-
-    if api == vulnerability_ci:
-        for x in responses.all():
-            print(x)
 
     if api == sys_user_group:
         for sys_user_group_data in responses.all():
