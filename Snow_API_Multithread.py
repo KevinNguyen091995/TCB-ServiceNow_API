@@ -6,7 +6,7 @@ def callback_thread(function, *args):
     asyncio.run(function(*args))
 
 def get_count_vulnerability_thread_call():
-    total_threads = 6
+    total_threads = 8
     get_entry_count_vulnerability()
 
     for thread in range(total_threads):

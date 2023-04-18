@@ -9,7 +9,7 @@ from time import time
 
 #ConfigParser Setup
 config = configparser.ConfigParser()
-config.read('config_snow.txt')
+config.read('C:/Users/kenguy/OneDrive - Texas Capital Bank/Desktop/Python/Config_Properties/config_file.txt')
 
 #DEFAULT
 username = config.get('DEFAULT', 'username')
@@ -115,7 +115,7 @@ def get_entry_count_vulnerability():
     global vul_inactive_count
 
     #ServiveNow Response to call API
-    responses = vulnerability_entry.get(limit = 60)
+    responses = vulnerability_entry.get(limit = 700)
 
     #Reading all response data from API
     for response in responses.all():
@@ -189,24 +189,28 @@ async def get_cmdb_server(entry_offset, thread_number):
     except Exception as e:
         print("Failed to receive a 200 HTTP Request")
 
-        for response in responses.all():
-            encrypt_server_name = data_key.encrypt(bytes(response['name'].replace("formerly: ", "").lower().encode()))
-            encrypt_ip = data_key.encrypt(bytes(response['ip_address'].lower().encode()))
+    for response in responses.all():
+        encrypt_server_name = data_key.encrypt(bytes(response['name'].replace("formerly: ", "").lower().encode()))
+        encrypt_ip = data_key.encrypt(bytes(response['ip_address'].lower().encode()))
 
-            #DECODE USING
-            #data_key.decrypt(encrypt_server_name).decode().replace("formerly: ", "")
-            #data_key.decrypt(encrypt_ip).decode().replace("formerly: ", "")
+        #DECODE USING
+        #data_key.decrypt(encrypt_server_name).decode().replace("formerly: ", "")
+        #data_key.decrypt(encrypt_ip).decode().replace("formerly: ", "")
 
-            data['server_name'] = encrypt_server_name
-            data['ip_address'] = encrypt_ip
-            data['mac_address'] = response['mac_address']
-            data['server_operating_system'] = response['os']
-            data['operational_status'] = operational_status_mapping.get(response['operational_status']).replace("formerly: ", "")
-            data['sys_id'] = response['sys_id']
-            data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
+        data['server_name'] = encrypt_server_name
+        data['ip_address'] = encrypt_ip
+        data['mac_address'] = response['mac_address']
+        data['server_operating_system'] = response['os']
+        data['operational_status'] = operational_status_mapping.get(response['operational_status']).replace("formerly: ", "")
+        data['sys_id'] = response['sys_id']
+        data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
 
+        try:
             cursor.execute(f"INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?)", data['server_name'], data['ip_address'], data['mac_address'], data['operational_status'], data['server_model_id'], data['server_operating_system'], data['sys_id'])
             cnxn.commit()
+
+        except Exception as e:
+            print("Failed to commit to execute/commit to database. Check if thread is opening new DB")
 
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")

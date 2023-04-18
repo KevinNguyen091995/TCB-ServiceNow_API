@@ -2,9 +2,9 @@ import configparser
 import pyodbc
 
 
-# Read the configuration file
+#ConfigParser Setup
 config = configparser.ConfigParser()
-config.read('Database/database.ini')
+config.read('C:/Users/kenguy/OneDrive - Texas Capital Bank/Desktop/Python/Config_Properties/config_file.txt')
 
 # Read the connection information from the file
 server = config['DATABASE']['SERVER']
@@ -15,19 +15,8 @@ def new_database_connection():
         # Connect to the database using Windows Authentication
         cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=' + server + ';DATABASE=' + database + ';Trusted_Connection=yes')
         cursor = cnxn.cursor()
-        print("Connected to DB")
 
         return cnxn, cursor
 
     except Exception as e:
-        print(e)
-
-def commit(connection):
-    # Commit the transaction
-    try:
-        connection.commit()
-        
-    except Exception as e:
-        print(e + "\n Failed on committing data")
-
-    print("Completed Commits Saved")
+        print("Failed to connect to database" , "\n", e)
