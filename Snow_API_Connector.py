@@ -62,6 +62,8 @@ Function to run API calls for a certain vul and grabs data of owner of vul
 """
 #Service now Vulnerabilities
 def get_service_now_vul():
+    cnxn, cursor = DC.new_database_connection()
+
     #Intitial Data
     global data
     vulnerability_scan = '2c1c80fb97a81d105cbeb4221153af5b'
@@ -99,7 +101,7 @@ def get_service_now_vul():
 
         check_owners(sys_user, "sys_id")
         get_data_equals(vulnerability_entry, "sys_id", vulnerability_scan)
-        insert_to_database_data()
+        insert_to_database_data(cnxn, cursor)
 
 """
 Function to grab all vul_entry_item with key/value pairs. 
@@ -127,6 +129,7 @@ def get_entry_count_vulnerability():
 
 #ASYNC Function to get vulnerability counts with multi-threading
 async def get_count_vulnerability(entry_offset, thread_number, total_threads):
+    cnxn, cursor = DC.new_database_connection()
     global index_set
 
     start = time()
@@ -139,10 +142,6 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
     
     #Do not add dupe data based on index since entries are split with float # and casting back to int
     index_set = set()
-
-    print(f"Thread number... {thread_number} starting")
-    print(f"Offset Number : {offset_parameter} {thread_number}")
-    print(f"Limit : {limit_parameter} {thread_number}")
 
     for index, (key, value) in enumerate(vul_entry_dict.items()):
         if index <= limit_parameter and index >= offset_parameter and index not in index_set:
@@ -160,13 +159,14 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
         if vul_inactive_count.get(key) != 0 or vul_active_count.get(key) != 0:
             query = f"INSERT INTO snow_vulnerability_count VALUES (?, ?, ?, ?, ?)"
             parameter = key, value, vul_active_count.get(key), vul_inactive_count.get(key), now_date
-            DC.cursor.execute(query, parameter)
-            DC.cnxn.commit()
+            cursor.execute(query, parameter)
+            cnxn.commit()
     
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
 
 async def get_cmdb_server(entry_offset, thread_number):
+    cnxn, cursor = DC.new_database_connection()
     start = time()
 
     #Offset parameter from function arg to start record from api call
@@ -181,30 +181,32 @@ async def get_cmdb_server(entry_offset, thread_number):
         '6' : 'Retired'
     }
 
-    print(f"Thread number : {thread_number} has offset {offset_parameter} and limit {limit_parameter}")
-
     queryBuilder = pysnow.QueryBuilder().field('ip_address').is_not_empty().AND().field('ip_address').not_equals('0.0.0.0')
 
-    responses = cmdb_ci_server_list.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
+    try:
+        responses = cmdb_ci_server_list.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
+    
+    except Exception as e:
+        print("Failed to receive a 200 HTTP Request")
 
-    for response in responses.all():
-        encrypt_server_name = data_key.encrypt(bytes(response['name'].replace("formerly: ", "").lower().encode()))
-        encrypt_ip = data_key.encrypt(bytes(response['ip_address'].lower().encode()))
+        for response in responses.all():
+            encrypt_server_name = data_key.encrypt(bytes(response['name'].replace("formerly: ", "").lower().encode()))
+            encrypt_ip = data_key.encrypt(bytes(response['ip_address'].lower().encode()))
 
-        #DECODE USING
-        #data_key.decrypt(encrypt_server_name).decode().replace("formerly: ", "")
-        #data_key.decrypt(encrypt_ip).decode().replace("formerly: ", "")
+            #DECODE USING
+            #data_key.decrypt(encrypt_server_name).decode().replace("formerly: ", "")
+            #data_key.decrypt(encrypt_ip).decode().replace("formerly: ", "")
 
-        data['server_name'] = encrypt_server_name
-        data['ip_address'] = encrypt_ip
-        data['mac_address'] = response['mac_address']
-        data['server_operating_system'] = response['os']
-        data['operational_status'] = operational_status_mapping.get(response['operational_status']).replace("formerly: ", "")
-        data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
-        data['sys_id'] = response['sys_id']
+            data['server_name'] = encrypt_server_name
+            data['ip_address'] = encrypt_ip
+            data['mac_address'] = response['mac_address']
+            data['server_operating_system'] = response['os']
+            data['operational_status'] = operational_status_mapping.get(response['operational_status']).replace("formerly: ", "")
+            data['sys_id'] = response['sys_id']
+            data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
 
-        DC.cursor.execute(f"INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?)", data['server_name'], data['ip_address'], data['mac_address'], data['operational_status'], data['server_model_id'], data['server_operating_system'], data['sys_id'])
-        DC.cnxn.commit()
+            cursor.execute(f"INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?)", data['server_name'], data['ip_address'], data['mac_address'], data['operational_status'], data['server_model_id'], data['server_operating_system'], data['sys_id'])
+            cnxn.commit()
 
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
@@ -237,12 +239,12 @@ def get_data_equals(api, query_builder_field = "", query_builder_search = ""):
 
     return data, software, owners
 
-def insert_to_database_data():
-        query = f"INSERT INTO {DC.table_name} VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+def insert_to_database_data(cnxn, cursor):
+        query = f"INSERT INTO snow_vulnerability VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
         parameters = data['number'],data['ip_address'],data['dns'],data['port'],data['protocol'],data['netbios'],data['vulnerability'],data['ten_vul_name'],data['ten_solution'],data['ten_id_name'], data['first_found'], data['last_state_changed_on'],data['risk_score'], data['description'], data['owner_1_name'], data['owner_1_email'], data['owner_2_name'], data['owner_2_email'], data['business_criticality'], data['resolution_reason'], data['active']
 
-        DC.cursor.execute(query, parameters)
-        DC.cnxn.commit()
+        cursor.execute(query, parameters)
+        cnxn.commit()
 
 def check_owners(api, query_builder_field):
     get_data_equals(sys_user_group, "sys_id", data['assignment_group'])
@@ -257,3 +259,7 @@ def check_owners(api, query_builder_field):
             count += 1
 
     return data
+
+# handle raised errors
+def handle_error(error):
+	print(error)

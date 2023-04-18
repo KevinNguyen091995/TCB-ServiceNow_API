@@ -14,7 +14,7 @@ def get_count_vulnerability_thread_call():
         threader.start()
 
 def get_cmdb_server_list_thread_call():
-    total_threads = 6
+    total_threads = 4
 
     for thread in range(total_threads):
         threader = threading.Thread(target=callback_thread, args=(get_cmdb_server, (thread * 1000), thread+1))
