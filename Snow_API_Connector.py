@@ -18,7 +18,6 @@ key = config.get('DEFAULT', 'key')
 instance_dev = config.get('DEFAULT', 'instance_dev')
 instance_test = config.get('DEFAULT', 'instance_test')
 instance = config.get('DEFAULT', 'instance')
-user_list = config.get('USER', 'users').split(",")
 
 #Data
 data = dict()
@@ -34,7 +33,6 @@ data_key = Fernet(key)
 c = pysnow.Client(instance=instance, user=username, password=password)
 
 #API
-personal_device_api = config.get('API', 'cmdb_ci_computer')
 sys_user_api = config.get('API', 'sys_user')
 incident_api = config.get('API', 'incident')
 software_api = config.get('API', 'software_install')
@@ -44,9 +42,9 @@ vulnerability_entry_api = config.get('API', 'vulnerability_entry')
 sys_object_api = config.get('API', 'sys_object')
 sys_user_group_api = config.get('API', 'sys_user_group')
 cmdb_ci_server_api = config.get("API", 'cmdb_ci_server')
+cmdb_ci_computer_api = config.get("API", "cmdb_ci_computer")
 
 # Define a resource, here we'll use the incident table API
-personal_device = c.resource(api_path=personal_device_api)
 sys_user = c.resource(api_path=sys_user_api)
 incident = c.resource(api_path=incident_api)
 software_install = c.resource(api_path=software_api)
@@ -56,6 +54,7 @@ vulnerability_item = c.resource(api_path=vulnerability_item_api)
 vulnerability_entry = c.resource(api_path=vulnerability_entry_api)
 sys_user_group = c.resource(api_path=sys_user_group_api)
 cmdb_ci_server_list = c.resource(api_path=cmdb_ci_server_api)
+cmdb_ci_computer = c.resource(api_path=cmdb_ci_computer_api)
 
 """
 Function to run API calls for a certain vul and grabs data of owner of vul
@@ -206,7 +205,7 @@ async def get_cmdb_server(entry_offset, thread_number):
         data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
 
         try:
-            cursor.execute(f"INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?)", data['server_name'], data['ip_address'], data['mac_address'], data['operational_status'], data['server_model_id'], data['server_operating_system'], data['sys_id'])
+            cursor.execute(f"INSERT INTO snow_cmdb_server_list VALUES(?,?,?,?,?,?,?)", data['server_name'], data['ip_address'], data['mac_address'], data['operational_status'], data['server_model_id'], data['server_operating_system'], data['sys_id'])
             cnxn.commit()
 
         except Exception as e:
@@ -214,6 +213,55 @@ async def get_cmdb_server(entry_offset, thread_number):
 
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
+
+async def get_cmdb_computer(entry_offset, thread_number):
+    cnxn, cursor = DC.new_database_connection()
+    start = time()
+
+    #Offset parameter from function arg to start record from api call
+    offset_parameter = math.floor(entry_offset)
+
+    #Limits the parameter of the offset so get data from offset 0 to last record
+    limit_parameter = math.ceil(offset_parameter + 1000)
+
+    operational_status_mapping = {
+        '1' : 'Operational',
+        '2' : 'Non-Operational',
+        '6' : 'Retired'
+    }
+
+    queryBuilder = pysnow.QueryBuilder().field('ip_address').is_not_empty().AND().field('ip_address').not_equals('0.0.0.0')
+
+    try:
+        responses = cmdb_ci_computer.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
+    
+    except Exception as e:
+        print("Failed to receive a 200 HTTP Request")
+
+    for response in responses.all():
+        encrypt_default_gateway = data_key.encrypt(bytes(response['default_gateway'].replace("formerly: ", "").lower().encode()))
+        encrypt_ip = data_key.encrypt(bytes(response['ip_address'].lower().encode()))
+
+        #DECODE USING
+        #data_key.decrypt(encrypt_server_name).decode().replace("formerly: ", "")
+        #data_key.decrypt(encrypt_ip).decode().replace("formerly: ", "")
+
+        data['computer_name'] = response['name']
+        data['ip_address'] = encrypt_ip
+        data['default_gateway'] = encrypt_default_gateway
+        data['operational_status'] = operational_status_mapping.get(response['operational_status']).replace("formerly: ", "")
+        data['server_operating_system'] = response['os']
+
+        try:
+            cursor.execute(f"INSERT INTO snow_cmdb_computer_list VALUES(?,?,?,?,?)", data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'])
+            cnxn.commit()
+
+        except Exception as e:
+            print("Failed to commit to execute/commit to database. Check if thread is opening new DB")
+
+    end = time()
+    print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
+
 
 def get_data_equals(api, query_builder_field = "", query_builder_search = ""):
     global data
