@@ -1,23 +1,7 @@
-import pysnow
-import configparser
-import math
-import json
 import Database.DB_Connection as DC
-from cryptography.fernet import Fernet
-from datetime import datetime
-from time import time
-
-#ConfigParser Setup
-config = configparser.ConfigParser()
-config.read('C:/Users/kenguy/OneDrive - Texas Capital Bank/Desktop/Python/Config_Properties/config_file.txt')
-
-#DEFAULT
-username = config.get('DEFAULT', 'username')
-password = config.get('DEFAULT', 'password')
-key = config.get('DEFAULT', 'key')
-instance_dev = config.get('DEFAULT', 'instance_dev')
-instance_test = config.get('DEFAULT', 'instance_test')
-instance = config.get('DEFAULT', 'instance')
+from Key_Functions_Modules import *
+import pysnow
+import math
 
 #Data
 data = dict()
@@ -26,8 +10,6 @@ owners = []
 vul_entry_dict = dict()
 vul_active_count = dict()
 vul_inactive_count = dict()
-now_date = datetime.now().strftime("%Y-%m-%d")
-data_key = Fernet(key)
 
 # Create client object
 c = pysnow.Client(instance=instance, user=username, password=password)
@@ -183,33 +165,41 @@ async def get_cmdb_server(entry_offset, thread_number):
     queryBuilder = pysnow.QueryBuilder().field('ip_address').is_not_empty().AND().field('ip_address').not_equals('0.0.0.0')
 
     try:
-        responses = cmdb_ci_server_list.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
-    
-    except Exception as e:
-        print("Failed to receive a 200 HTTP Request")
-
-    for response in responses.all():
-        encrypt_server_name = data_key.encrypt(bytes(response['name'].replace("formerly: ", "").lower().encode()))
-        encrypt_ip = data_key.encrypt(bytes(response['ip_address'].lower().encode()))
-
-        #DECODE USING
-        #data_key.decrypt(encrypt_server_name).decode().replace("formerly: ", "")
-        #data_key.decrypt(encrypt_ip).decode().replace("formerly: ", "")
-
-        data['server_name'] = encrypt_server_name
-        data['ip_address'] = encrypt_ip
-        data['mac_address'] = response['mac_address']
-        data['server_operating_system'] = response['os']
-        data['operational_status'] = operational_status_mapping.get(response['operational_status']).replace("formerly: ", "")
-        data['sys_id'] = response['sys_id']
-        data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
+        cmdb_server_response = cmdb_ci_server_list.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
 
         try:
-            cursor.execute(f"INSERT INTO snow_cmdb_server_list VALUES(?,?,?,?,?,?,?)", data['server_name'], data['ip_address'], data['mac_address'], data['operational_status'], data['server_model_id'], data['server_operating_system'], data['sys_id'])
-            cnxn.commit()
+            for response in cmdb_server_response.all():
+                encrypt_server_name = data_key.encrypt(bytes(response['name'].replace("formerly: ", "").lower().encode()))
+                encrypt_default_gateway = encrypt_data(response['default_gateway'].lower().encode())
+                encrypt_ip = data_key.encrypt(bytes(response['ip_address'].lower().encode()))
+
+                data['computer_name'] = encrypt_server_name
+                data['ip_address'] = encrypt_ip
+                data['default_gateway'] = encrypt_default_gateway
+                data['operational_status'] = operational_status_mapping.get(response['operational_status'])
+                data['server_operating_system'] = response['os']
+                data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
+                data['mac_address'] = response['mac_address']
+                data['sys_id'] = response['sys_id']
+                data['created_date'] = now_date
+                data['api_table'] = cmdb_ci_computer_api
+
+
+                try:
+                    query_insert = "INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?)"
+                    parameter = data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'], data['server_model_id'], data['mac_address'], data['sys_id'], data['created_date'], data['api_table']
+
+                    cursor.execute(query_insert, parameter)
+                    cnxn.commit()
+                    
+                except Exception as e:
+                    print(f"Failed to insert data for {response}", "\n", e)
 
         except Exception as e:
-            print("Failed to commit to execute/commit to database. Check if thread is opening new DB")
+            print("Failed at loop response", "\n", e)
+    
+    except Exception as e:
+        print("Failed to receive a 200 HTTP Request", "\n", e)
 
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
@@ -222,7 +212,7 @@ async def get_cmdb_computer(entry_offset, thread_number):
     offset_parameter = math.floor(entry_offset)
 
     #Limits the parameter of the offset so get data from offset 0 to last record
-    limit_parameter = math.ceil(offset_parameter + 1000)
+    limit_parameter = math.ceil(offset_parameter + 2000)
 
     operational_status_mapping = {
         '1' : 'Operational',
@@ -230,34 +220,44 @@ async def get_cmdb_computer(entry_offset, thread_number):
         '6' : 'Retired'
     }
 
-    queryBuilder = pysnow.QueryBuilder().field('ip_address').is_not_empty().AND().field('ip_address').not_equals('0.0.0.0')
+    queryBuilder = pysnow.QueryBuilder().field('ip_address').is_not_empty()
 
     try:
-        responses = cmdb_ci_computer.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
-    
-    except Exception as e:
-        print("Failed to receive a 200 HTTP Request")
-
-    for response in responses.all():
-        encrypt_default_gateway = data_key.encrypt(bytes(response['default_gateway'].replace("formerly: ", "").lower().encode()))
-        encrypt_ip = data_key.encrypt(bytes(response['ip_address'].lower().encode()))
-
-        #DECODE USING
-        #data_key.decrypt(encrypt_server_name).decode().replace("formerly: ", "")
-        #data_key.decrypt(encrypt_ip).decode().replace("formerly: ", "")
-
-        data['computer_name'] = response['name']
-        data['ip_address'] = encrypt_ip
-        data['default_gateway'] = encrypt_default_gateway
-        data['operational_status'] = operational_status_mapping.get(response['operational_status']).replace("formerly: ", "")
-        data['server_operating_system'] = response['os']
+        cmdb_computer_response = cmdb_ci_computer.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
 
         try:
-            cursor.execute(f"INSERT INTO snow_cmdb_computer_list VALUES(?,?,?,?,?)", data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'])
-            cnxn.commit()
+            for response in cmdb_computer_response.all():
+                encrypt_computer_name = encrypt_data(response['name'].replace("formerly: ", "").lower().encode())
+                encrypt_default_gateway = encrypt_data(response['default_gateway'].lower().encode())
+                encrypt_ip = encrypt_data(response['ip_address'].lower().encode())
+
+                data['computer_name'] = encrypt_computer_name
+                data['ip_address'] = encrypt_ip
+                data['default_gateway'] = encrypt_default_gateway
+                data['operational_status'] = operational_status_mapping.get(response['operational_status'])
+                data['server_operating_system'] = response['os']
+                data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
+                data['mac_address'] = response['mac_address']
+                data['sys_id'] = response['sys_id']
+                data['created_date'] = now_date
+                data['api_table'] = cmdb_ci_computer_api
+
+
+                try:
+                    query_insert = "INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?)"
+                    parameter = data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'], data['server_model_id'], data['mac_address'], data['sys_id'], data['created_date'], data['api_table']
+
+                    cursor.execute(query_insert, parameter)
+                    cnxn.commit()
+
+                except Exception as e:
+                    print(f"Failed to insert data for {response}", "\n", e)
 
         except Exception as e:
-            print("Failed to commit to execute/commit to database. Check if thread is opening new DB")
+            print("Failed at loop response", "\n", e)
+    
+    except Exception as e:
+        print("Failed to receive a 200 HTTP Request", "\n", e)
 
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
@@ -291,13 +291,6 @@ def get_data_equals(api, query_builder_field = "", query_builder_search = ""):
 
     return data, software, owners
 
-def insert_to_database_data(cnxn, cursor):
-        query = f"INSERT INTO snow_vulnerability VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-        parameters = data['number'],data['ip_address'],data['dns'],data['port'],data['protocol'],data['netbios'],data['vulnerability'],data['ten_vul_name'],data['ten_solution'],data['ten_id_name'], data['first_found'], data['last_state_changed_on'],data['risk_score'], data['description'], data['owner_1_name'], data['owner_1_email'], data['owner_2_name'], data['owner_2_email'], data['business_criticality'], data['resolution_reason'], data['active']
-
-        cursor.execute(query, parameters)
-        cnxn.commit()
-
 def check_owners(api, query_builder_field):
     get_data_equals(sys_user_group, "sys_id", data['assignment_group'])
     count = 1
@@ -311,7 +304,3 @@ def check_owners(api, query_builder_field):
             count += 1
 
     return data
-
-# handle raised errors
-def handle_error(error):
-	print(error)
