@@ -186,12 +186,12 @@ async def get_cmdb_server(entry_offset, thread_number):
 
 
                 try:
-                    query_insert = "INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?)"
+                    query_insert = "INSERT INTO test_snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?)"
                     parameter = data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'], data['server_model_id'], data['mac_address'], data['sys_id'], data['created_date'], data['api_table']
 
                     cursor.execute(query_insert, parameter)
                     cnxn.commit()
-                    
+
                 except Exception as e:
                     print(f"Failed to insert data for {response}", "\n", e)
 
@@ -244,7 +244,7 @@ async def get_cmdb_computer(entry_offset, thread_number):
 
 
                 try:
-                    query_insert = "INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?)"
+                    query_insert = "INSERT INTO test_snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?)"
                     parameter = data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'], data['server_model_id'], data['mac_address'], data['sys_id'], data['created_date'], data['api_table']
 
                     cursor.execute(query_insert, parameter)
@@ -304,3 +304,13 @@ def check_owners(api, query_builder_field):
             count += 1
 
     return data
+
+def cmdb_distinct():
+    cnxn, cursor = DC.new_database_connection()
+
+    try:
+        cursor.execute(f"INSERT INTO snow_cmdb_list SELECT DISTINCT * FROM test_snow_cmdb_list")
+        cnxn.commit()
+    
+    except Exception as e:
+        print(f"Failed To DISTINCT Data", "\n", e)
