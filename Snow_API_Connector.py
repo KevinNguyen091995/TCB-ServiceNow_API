@@ -2,8 +2,9 @@ import Database.DB_Connection as DC
 from Key_Functions_Modules import *
 import pysnow
 import math
+import json
 
-#Data
+#Initial Global Data for Vulnerability Scans
 data = dict()
 software = dict()
 owners = []
@@ -11,10 +12,10 @@ vul_entry_dict = dict()
 vul_active_count = dict()
 vul_inactive_count = dict()
 
-# Create client object
+#Create client object
 c = pysnow.Client(instance=instance, user=username, password=password)
 
-#API
+#API Setup
 sys_user_api = config.get('API', 'sys_user')
 incident_api = config.get('API', 'incident')
 software_api = config.get('API', 'software_install')
@@ -24,7 +25,6 @@ vulnerability_entry_api = config.get('API', 'vulnerability_entry')
 sys_object_api = config.get('API', 'sys_object')
 sys_user_group_api = config.get('API', 'sys_user_group')
 cmdb_ci_server_api = config.get("API", 'cmdb_ci_server')
-cmdb_ci_computer_api = config.get("API", "cmdb_ci_computer")
 
 # Define a resource, here we'll use the incident table API
 sys_user = c.resource(api_path=sys_user_api)
@@ -36,7 +36,12 @@ vulnerability_item = c.resource(api_path=vulnerability_item_api)
 vulnerability_entry = c.resource(api_path=vulnerability_entry_api)
 sys_user_group = c.resource(api_path=sys_user_group_api)
 cmdb_ci_server_list = c.resource(api_path=cmdb_ci_server_api)
-cmdb_ci_computer = c.resource(api_path=cmdb_ci_computer_api)
+
+#Subtract 2 dates
+def days_between(d1, d2):
+    d1 = datetime.strptime(d1, "%Y-%m-%d")
+    d2 = datetime.strptime(d2, "%Y-%m-%d")
+    return abs((d2 - d1).days)
 
 """
 Function to run API calls for a certain vul and grabs data of owner of vul
@@ -82,7 +87,8 @@ def get_service_now_vul():
 
         check_owners(sys_user, "sys_id")
         get_data_equals(vulnerability_entry, "sys_id", vulnerability_scan)
-        insert_to_database_data(cnxn, cursor)
+        #NEED TO INSERT TO DATABASE
+        #insert_to_database_data(cnxn, cursor)
 
 """
 Function to grab all vul_entry_item with key/value pairs. 
@@ -96,7 +102,7 @@ def get_entry_count_vulnerability():
     global vul_inactive_count
 
     #ServiveNow Response to call API
-    responses = vulnerability_entry.get(limit = 700)
+    responses = vulnerability_entry.get()
 
     #Reading all response data from API
     for response in responses.all():
@@ -146,80 +152,23 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
 
-async def get_cmdb_server(entry_offset, thread_number):
+async def get_cmdb_computer(entry_offset, limit_count, thread_number):
     cnxn, cursor = DC.new_database_connection()
     start = time()
 
-    #Offset parameter from function arg to start record from api call
-    offset_parameter = math.floor(entry_offset)
+    cmdb_ci_computer_api = config.get("API", "cmdb_ci_computer")
+    cmdb_ci_computer = c.resource(api_path=cmdb_ci_computer_api)
 
-    #Limits the parameter of the offset so get data from offset 0 to last record
-    limit_parameter = math.ceil(offset_parameter + 1000)
+
+    #Offset parameter from function arg to start record from api call
+    offset_parameter = entry_offset
+    limit_parameter = limit_count
 
     operational_status_mapping = {
         '1' : 'Operational',
         '2' : 'Non-Operational',
         '6' : 'Retired'
     }
-
-    queryBuilder = pysnow.QueryBuilder().field('ip_address').is_not_empty().AND().field('ip_address').not_equals('0.0.0.0')
-
-    try:
-        cmdb_server_response = cmdb_ci_server_list.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
-
-        try:
-            for response in cmdb_server_response.all():
-                encrypt_server_name = data_key.encrypt(bytes(response['name'].replace("formerly: ", "").lower().encode()))
-                encrypt_default_gateway = encrypt_data(response['default_gateway'].lower().encode())
-                encrypt_ip = data_key.encrypt(bytes(response['ip_address'].lower().encode()))
-
-                data['computer_name'] = encrypt_server_name
-                data['ip_address'] = encrypt_ip
-                data['default_gateway'] = encrypt_default_gateway
-                data['operational_status'] = operational_status_mapping.get(response['operational_status'])
-                data['server_operating_system'] = response['os']
-                data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
-                data['mac_address'] = response['mac_address']
-                data['sys_id'] = response['sys_id']
-                data['created_date'] = now_date
-                data['api_table'] = cmdb_ci_computer_api
-
-
-                try:
-                    query_insert = "INSERT INTO test_snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?)"
-                    parameter = data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'], data['server_model_id'], data['mac_address'], data['sys_id'], data['created_date'], data['api_table']
-
-                    cursor.execute(query_insert, parameter)
-                    cnxn.commit()
-
-                except Exception as e:
-                    print(f"Failed to insert data for {response}", "\n", e)
-
-        except Exception as e:
-            print("Failed at loop response", "\n", e)
-    
-    except Exception as e:
-        print("Failed to receive a 200 HTTP Request", "\n", e)
-
-    end = time()
-    print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
-
-async def get_cmdb_computer(entry_offset, thread_number):
-    cnxn, cursor = DC.new_database_connection()
-    start = time()
-
-    #Offset parameter from function arg to start record from api call
-    offset_parameter = math.floor(entry_offset)
-
-    #Limits the parameter of the offset so get data from offset 0 to last record
-    limit_parameter = math.ceil(offset_parameter + 2000)
-
-    operational_status_mapping = {
-        '1' : 'Operational',
-        '2' : 'Non-Operational',
-        '6' : 'Retired'
-    }
-
     queryBuilder = pysnow.QueryBuilder().field('ip_address').is_not_empty()
 
     try:
@@ -237,15 +186,18 @@ async def get_cmdb_computer(entry_offset, thread_number):
                 data['operational_status'] = operational_status_mapping.get(response['operational_status'])
                 data['server_operating_system'] = response['os']
                 data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
-                data['mac_address'] = response['mac_address']
+                data['mac_address'] = response['mac_address'].strip().replace(":","-")
                 data['sys_id'] = response['sys_id']
                 data['created_date'] = now_date
                 data['api_table'] = cmdb_ci_computer_api
-
+                data['first_discovered'] = now_date if response['first_discovered'] == "" else response['first_discovered'].strip().split(" ")[0]
+                data['last_discovered'] = data['first_discovered'] if response['last_discovered'] == "" else response['last_discovered'].strip().split(" ")[0]
+                data['discovery_source'] = response['discovery_source']
+                data['total_days'] = days_between(data['first_discovered'], data['last_discovered'])
 
                 try:
-                    query_insert = "INSERT INTO test_snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?)"
-                    parameter = data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'], data['server_model_id'], data['mac_address'], data['sys_id'], data['created_date'], data['api_table']
+                    query_insert = "INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                    parameter = data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'], data['server_model_id'], data['mac_address'], data['sys_id'], data['created_date'], data['api_table'], data['first_discovered'], data['last_discovered'], data['discovery_source'], data['total_days']
 
                     cursor.execute(query_insert, parameter)
                     cnxn.commit()
@@ -304,13 +256,3 @@ def check_owners(api, query_builder_field):
             count += 1
 
     return data
-
-def cmdb_distinct():
-    cnxn, cursor = DC.new_database_connection()
-
-    try:
-        cursor.execute(f"INSERT INTO snow_cmdb_list SELECT DISTINCT * FROM test_snow_cmdb_list")
-        cnxn.commit()
-    
-    except Exception as e:
-        print(f"Failed To DISTINCT Data", "\n", e)

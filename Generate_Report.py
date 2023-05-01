@@ -6,7 +6,7 @@ def align_center(x):
     return ['text-align: center' for x in x]
 
 def generate_report_main():
-    with pd.ExcelWriter(f"{now_date}_Report.xlsx") as writer:
+    with pd.ExcelWriter(f"Reports/{now_date}_Report.xlsx") as writer:
         generate_report_asset(writer)
         generate_report_cidr(writer)
 
