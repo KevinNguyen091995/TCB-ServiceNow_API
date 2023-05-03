@@ -8,19 +8,27 @@ total_cidr_array = queue.Queue()
 def insert_crowdstrike():
     cnxn, cursor = DC.new_database_connection()
 
-    with open('3574_hosts_2023-03-31T16_30_25Z.csv', 'r') as csvfile:
+    data = dict()
+
+    with open('Crowdstrike_Reports/5387_hosts_2023-05-03T19_20_46Z.csv', 'r') as csvfile:
         csvreader = csv.reader(csvfile)
 
-        headers = next(csvreader)
-
-        query = "INSERT INTO crowdstrike ({}) VALUES ({})".format('.'.join(headers), '.'.join('?' for i in range(len(headers))))
+        # headers = next(csvreader)
+        # data_type = 'varchar(2048)'
+        # headers.append('created_date')
+        # for column in headers:
+        #     query = f"ALTER TABLE crowdstrike ADD {column.replace(' ', '_').replace('/', '_')} {data_type}"
+        #     cursor.execute(query)
+        #     cnxn.commit()
+   
 
         for row in csvreader:
-            row[0] = encrypt_data(row[17].lower().encode())
-            row[17] = encrypt_data(row[17].lower().encode())
+            row.append(now_date)
+            row[0] = encrypt_data(row[0].lower().encode())
             row[18] = encrypt_data(row[18].lower().encode())
             row[19] = encrypt_data(row[19].lower().encode())
             row[20] = encrypt_data(row[20].lower().encode())
+            row[21] = encrypt_data(row[21].lower().encode())
 
             sql_insert = 'INSERT INTO crowdstrike VALUES ('
             for value in row:
