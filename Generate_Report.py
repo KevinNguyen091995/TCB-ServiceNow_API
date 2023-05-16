@@ -39,7 +39,7 @@ def generate_report_cidr(writer):
         ON snow.snow_computer_ip_address = cidr_ip_address
 
         LEFT JOIN crowdstrike as crowd
-        ON snow.snow_computer_ip_address = crowd.[Local IP]
+        ON snow.snow_computer_ip_address = crowd.[Local_IP]
 
 		WHERE cidr_notation is not NULL
 		
@@ -112,7 +112,7 @@ def generate_report_asset(writer):
 
         if int(rows['total_days']) < 30 \
         and rows['crowdstrike_found'] == "True" \
-        and rows['snow_serial_number'].lower() == rows['Serial Number'].lower():
+        and rows['snow_serial_number'].lower() == rows['Serial_Number'].lower():
             return ['background-color: green' for row in rows]
         
         elif int(rows['total_days']) <= 90 \
@@ -130,8 +130,8 @@ def generate_report_asset(writer):
     cnxn, cursor = new_database_connection()
 
     query = ("""
-        SELECT DISTINCT cidr.*, snow.*, crowd.Hostname, crowd.[Platform], crowd.Model, crowd.[Local IP], 
-        crowd.Domain, crowd.[MAC Address], crowd.[Host ID], crowd.[Serial Number],
+        SELECT DISTINCT cidr.*, snow.*, crowd.Hostname, crowd.[Platform], crowd.Model, crowd.[Local_IP], 
+        crowd.Domain, crowd.[MAC_Address], crowd.[Host_ID], crowd.[Serial_Number],
 
 		CASE when crowd.Hostname is NULL or crowd.Hostname = '' 
 		THEN 'False'
@@ -155,7 +155,7 @@ def generate_report_asset(writer):
         ON snow.snow_computer_ip_address = cidr_ip_address
 
         LEFT JOIN crowdstrike as crowd
-        ON snow.snow_serial_number = crowd.[Serial Number]
+        ON snow.snow_serial_number = crowd.[Serial_Number]
 
         ORDER BY cidr.cidr_notation DESC""")
     

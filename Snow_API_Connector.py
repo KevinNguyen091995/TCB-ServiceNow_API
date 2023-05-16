@@ -3,6 +3,8 @@ from Key_Functions_Modules import *
 import pysnow
 import math
 import json
+import pandas as pd
+from UliPlot.XLSX import auto_adjust_xlsx_column_width
 
 #Initial Global Data for Vulnerability Scans
 data = dict()
@@ -25,6 +27,8 @@ vulnerability_entry_api = config.get('API', 'vulnerability_entry')
 sys_object_api = config.get('API', 'sys_object')
 sys_user_group_api = config.get('API', 'sys_user_group')
 cmdb_ci_server_api = config.get("API", 'cmdb_ci_server')
+cmdb_ci_win_server_api = config.get("API", 'cmdb_ci_win_server')
+cmdb_sam_sw_install_api = config.get("API", "cmdb_sam_sw_install")
 
 # Define a resource, here we'll use the incident table API
 sys_user = c.resource(api_path=sys_user_api)
@@ -36,6 +40,19 @@ vulnerability_item = c.resource(api_path=vulnerability_item_api)
 vulnerability_entry = c.resource(api_path=vulnerability_entry_api)
 sys_user_group = c.resource(api_path=sys_user_group_api)
 cmdb_ci_server_list = c.resource(api_path=cmdb_ci_server_api)
+cmdb_ci_win_server = c.resource(api_path=cmdb_ci_win_server_api)
+cmdb_sam_sw_install = c.resource(api_path=cmdb_sam_sw_install_api)
+
+operational_status_mapping = {
+    '1' : 'Operational',
+    '2' : 'Non-Operational',
+    '6' : 'Retired'
+}
+
+install_status_mapping = {
+    '1' : 'Operational',
+    '7' : 'Retired'
+}
 
 #Subtract 2 dates
 def days_between(d1, d2):
@@ -164,11 +181,6 @@ async def get_cmdb_computer(entry_offset, limit_count, thread_number):
     offset_parameter = entry_offset
     limit_parameter = limit_count
 
-    operational_status_mapping = {
-        '1' : 'Operational',
-        '2' : 'Non-Operational',
-        '6' : 'Retired'
-    }
     queryBuilder = pysnow.QueryBuilder().field('ip_address').is_not_empty()
 
     try:
@@ -257,3 +269,113 @@ def check_owners(api, query_builder_field):
             count += 1
 
     return data
+
+async def check_servers(api_table, comparable_data=""):
+
+
+    #FUNCTIONS
+    def apply_background_color(rows):
+        if rows['operational_status'] == "Operational" \
+            and rows['install_status'] == "Operational" \
+            and int(rows['total_days']) <= 15:
+            return ['background-color: green' for row in rows]
+        
+        else:
+            return ['background-color: red' for row in rows]
+        
+    def align_center(rows):
+        return ['text-align: center' for row in rows]
+    
+    def find_software(name, software_name = "", without_publisher=False):
+            cmdb_sam_sw_install.parameters.exclude_reference_link = True
+
+            if without_publisher == False:
+                query_builder = pysnow.QueryBuilder()\
+                .field('publisher').equals(name)\
+                .AND().field("display_name").contains(software_name)\
+                .AND().field('installed_on').equals(data['sys_id'])
+
+            else:
+                query_builder = pysnow.QueryBuilder()\
+                .field("display_name").contains(software_name)\
+                .AND().field('installed_on').equals(data['sys_id'])    
+            
+            responses = cmdb_sam_sw_install.get(query=query_builder, limit=1)
+
+            for response in responses.all():
+                if response['publisher'] == name or software_name.lower() in response['display_name'].lower():
+                    data[f'{name.lower()}_installed'] = 1
+
+    def write_file(file_name, data):
+        with open(f'{file_name}.txt', 'a+') as f:
+            f.write(data)
+
+    def compare_data(data, report_name, search):
+        report_dataframe = pd.read_csv(report_name)
+
+        #IF GOOD RECORD
+        if data['operational_status'] == "Operational" \
+            and data['install_status'] == "Operational" \
+            and int(data['total_days']) <= 15\
+            and data[search] == 0:
+                
+                 #WRITE GOOD RECORDS NO SERVICENOW
+                write_file(f"NA_ServiceNow_{search}_{api_table}.txt", f"{data['server_name']} : {data['serial_number']}\n")
+
+                #NOT IN SNOW AND NOT FOUND IN COMPARABLE DATA
+                if report_dataframe['Serial Number'].eq(data['serial_number']).sum() == 0:
+                    write_file(f"NA_Both_{search}_{api_table}.txt", f"{data['server_name']} : {data['serial_number']}\n")
+
+    with pd.ExcelWriter(f"Reports/{now_date}_Report.xlsx", mode='w', engine="openpyxl") as writer:
+        full_asset_dataframe = pd.DataFrame()
+
+        server_query_builder = pysnow.QueryBuilder().field('ip_address').is_not_empty().AND().field('serial_number').is_not_empty()
+        responses = api_table.get(query=server_query_builder)
+
+        for response in responses.all():
+            encrypt_server_name = encrypt_data(response['name'].replace("formerly: ", "").lower().encode())
+            encrypt_default_gateway = encrypt_data(response['default_gateway'].lower().encode())
+            encrypt_ip = encrypt_data(response['ip_address'].lower().encode())
+
+            data['server_name'] = response['name']
+            data['ip_address'] = response['ip_address']
+            data['default_gateway'] = response['default_gateway']
+            data['operational_status'] = operational_status_mapping.get(response['operational_status'])
+            data['install_status'] = install_status_mapping.get(response['install_status'])
+            data['server_operating_system'] = response['os']
+            data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
+            data['mac_address'] = response['mac_address'].strip().replace(":","-")
+            data['sys_id'] = response['sys_id']
+            data['created_date'] = now_date
+            data['api_table'] = "cmdb_ci_win_server"
+            data['first_discovered'] = now_date if response['first_discovered'] == "" else response['first_discovered'].strip().split(" ")[0]
+            data['last_discovered'] = data['first_discovered'] if response['last_discovered'] == "" else response['last_discovered'].strip().split(" ")[0]
+            data['discovery_source'] = response['discovery_source']
+            data['total_days'] = days_between(now_date, data['last_discovered'])
+            data['serial_number'] = response['serial_number']
+            data['microsoft_configuration_client_installed'] = 0
+            data['crowdstrike_installed'] = 0
+            data['tenable_installed'] = 0
+            data['datadog_installed'] = 0
+            data['mcafee_installed'] = 0
+            data['troubleshooting_tools_installed'] = 0
+
+            find_software("CrowdStrike", "Control")
+            find_software("Tenable", "Agent")
+            find_software("Datadog", "Agent")
+            find_software('McAfee', "Agent")
+            find_software("microsoft_configuration_client", "Configuration Manager Client", True)
+            find_software("troubleshooting_tools", "WinPcap", True)
+
+            compare_data(data, "Crowdstrike_Reports/6013_hosts_2023-05-12T16_58_03Z.csv", "crowdstrike_installed")
+
+            full_asset_dataframe = pd.concat([full_asset_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+        full_asset_dataframe.reset_index(drop=True)\
+        .style.apply(align_center)\
+        .apply(apply_background_color, axis=1)\
+        .to_excel(writer, sheet_name=f"Asset Report", engine='openpyxl')
+
+        auto_adjust_xlsx_column_width(full_asset_dataframe, writer, sheet_name="Asset Report", margin=0)
+
+dftest = pd.read_csv("Crowdstrike_Reports/6013_hosts_2023-05-12T16_58_03Z.csv")

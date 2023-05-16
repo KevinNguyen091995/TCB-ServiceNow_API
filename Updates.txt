@@ -1,0 +1,43 @@
+Updates needed for 05-08-2023
+
+	Software installed
+		Check for Wireshark/WinPCap/Npcap/NMAP
+		Check for Configuration Manager Client
+		Check for Varonis/Varonis Audit Event Agent
+		Check for Trellix/Trellix Agent
+
+	Rules:	
+		If total days is > 15 days = Bad Record
+		If total days if < 15 days = Good Record
+		Operation status = Install Status = Good Record
+		Operation Status != Install Status = Bad Record
+		No Software listed = Bad Record
+
+	Operating System
+		Calculate Good/Bad records percent wise
+
+	Application Owner/Server Owner
+		Grab Data
+
+	Business Application
+		Relationship
+
+Updates Needed for 05-12-2023
+	Create 2 .txt reports
+		1 - Create report that have crowdstrike non-installed and found in crowdstrike - Bad data on ServiceNow
+		2 - Create report that have crowdstrike non-installed and not found in crowdstrike - No crowdstrike no installed
+		
+	Trending Number to SQL
+		1 - Counts of crowdstrike non-installed and found in crowdstrike - Trending % wise to SQL
+		2 - Counts crowdstrike non-installed and not found in crowdstrike - Trending % wise to SQL
+
+		5-12-2023 - Crowdstrike
+			Total 680
+				470 Installed
+				
+		
+	
+		
+	
+
+
