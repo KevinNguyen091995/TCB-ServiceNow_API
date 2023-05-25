@@ -35,6 +35,9 @@ Updates Needed for 05-12-2023
 			Total 680
 				470 Installed
 				
+Updates Needed for 05-24-2023
+	Add to Retire to Retire Ping
+	
 		
 	
 		
