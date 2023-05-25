@@ -1,13 +1,17 @@
 from cryptography.fernet import Fernet
 from cryptography.fernet import InvalidToken
 from datetime import datetime, timedelta
-from time import time
+from UliPlot.XLSX import auto_adjust_xlsx_column_width
+from time import time, sleep
+from openpyxl import Workbook, load_workbook
 import configparser
 import pandas as pd
+import asyncio
 import csv
 import threading
-import asyncio
-
+import os
+import json
+import math
 
 #ConfigParser Setup
 config = configparser.ConfigParser()
@@ -44,3 +48,27 @@ def decrypt_data(str_decrypt):
 
 def callback_thread(function, *args):
     asyncio.run(function(*args))
+
+#FUNCTIONS
+def apply_background_color(rows):
+    if rows['operational_status'] == "Operational" \
+        and rows['install_status'] == "Installed" \
+        and int(rows['total_days']) <= 15:
+        return ['background-color: green' for row in rows]
+    
+    else:
+        return ['background-color: red' for row in rows]
+    
+def align_center(rows):
+    return ['text-align: center' for row in rows]
+
+def write_to_excel(api_table_name, dataframe):
+    file_name = f"Reports/{now_date}/{api_table_name}_{now_date}_Report.xlsx"
+
+    with pd.ExcelWriter(file_name, mode='w', engine="openpyxl") as writer:
+        dataframe.reset_index(drop=True)\
+        .style.apply(align_center)\
+        .apply(apply_background_color, axis=1)\
+        .to_excel(writer, sheet_name=f"Asset Report", index=False)
+
+        auto_adjust_xlsx_column_width(dataframe, writer, sheet_name="Asset Report", margin=0)

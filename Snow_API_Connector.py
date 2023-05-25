@@ -1,58 +1,61 @@
 import Database.DB_Connection as DC
-from Key_Functions_Modules import *
-import pysnow
-import math
-import json
-import pandas as pd
-from UliPlot.XLSX import auto_adjust_xlsx_column_width
+from Snow_API_Initial_Data import *
 
-#Initial Global Data for Vulnerability Scans
-data = dict()
-software = dict()
-owners = []
-vul_entry_dict = dict()
-vul_active_count = dict()
-vul_inactive_count = dict()
+full_dataframe = pd.DataFrame()
 
-#Create client object
-c = pysnow.Client(instance=instance, user=username, password=password)
+def set_dataframe(new_dataframe, data):
+    global full_dataframe
+    full_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
 
-#API Setup
-sys_user_api = config.get('API', 'sys_user')
-incident_api = config.get('API', 'incident')
-software_api = config.get('API', 'software_install')
-vulnerability_ci_api = config.get('API', 'vulnerability_ci')
-vulnerability_item_api = config.get('API', 'vulnerability_item') 
-vulnerability_entry_api = config.get('API', 'vulnerability_entry')
-sys_object_api = config.get('API', 'sys_object')
-sys_user_group_api = config.get('API', 'sys_user_group')
-cmdb_ci_server_api = config.get("API", 'cmdb_ci_server')
-cmdb_ci_win_server_api = config.get("API", 'cmdb_ci_win_server')
-cmdb_sam_sw_install_api = config.get("API", "cmdb_sam_sw_install")
+def make_folder():
+    path = f"Reports/{now_date}"
 
-# Define a resource, here we'll use the incident table API
-sys_user = c.resource(api_path=sys_user_api)
-incident = c.resource(api_path=incident_api)
-software_install = c.resource(api_path=software_api)
-vulnerability_ci = c.resource(api_path=vulnerability_ci_api)
-sys_object = c.resource(api_path=sys_object_api)
-vulnerability_item = c.resource(api_path=vulnerability_item_api)
-vulnerability_entry = c.resource(api_path=vulnerability_entry_api)
-sys_user_group = c.resource(api_path=sys_user_group_api)
-cmdb_ci_server_list = c.resource(api_path=cmdb_ci_server_api)
-cmdb_ci_win_server = c.resource(api_path=cmdb_ci_win_server_api)
-cmdb_sam_sw_install = c.resource(api_path=cmdb_sam_sw_install_api)
+    if not os.path.isdir(path):
+        os.makedirs(path)
 
-operational_status_mapping = {
-    '1' : 'Operational',
-    '2' : 'Non-Operational',
-    '6' : 'Retired'
-}
+    return path
 
-install_status_mapping = {
-    '1' : 'Operational',
-    '7' : 'Retired'
-}
+def get_data_equals(api, query_builder_field = "", query_builder_search = ""):
+    global data
+    global owners
+
+    responses = api.get(query= {query_builder_field: query_builder_search})
+
+    if api == sys_user_group:
+        for sys_user_group_data in responses.all():
+            owners = []
+            try:
+                owners.append(sys_user_group_data['u_l3_leader']['link'].split("/")[-1])
+            except:
+                pass
+
+            try:
+                owners.append(sys_user_group_data['u_l4_leader']['link'].split("/")[-1])
+            except:
+                pass
+
+    if api == vulnerability_entry:
+        for vul_entry_data in responses.all():
+            data['ten_vul_name'] = vul_entry_data["name"]
+            data["ten_solution"] = vul_entry_data['solution']
+            data['ten_id_name'] = vul_entry_data['id']
+            data['date_published'] = vul_entry_data['date_published']
+
+    return data, software, owners
+
+def check_owners(api, query_builder_field):
+    get_data_equals(sys_user_group, "sys_id", data['assignment_group'])
+    count = 1
+
+    for owner in owners:
+        responses = api.get(query = {query_builder_field: owner})
+
+        for user_data in responses.all():
+            data[f"owner_{count}_name"] = user_data['name']
+            data[f'owner_{count}_email'] = user_data['email']
+            count += 1
+
+    return data
 
 #Subtract 2 dates
 def days_between(d1, d2):
@@ -169,54 +172,210 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
 
-async def get_cmdb_computer(entry_offset, limit_count, thread_number):
+async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number):
+    global dataframe
+
+    #Create client object
+    client = pysnow.Client(instance=instance, user=username, password=password)
+
+    #Session Thread Safe
+    session_api = config.get('API', f"{api_table_name}")
+    session = client.resource(api_path=session_api)
+
+    session_software_api = config.get('API', "cmdb_sam_sw_install")
+    session_software = client.resource(api_path=session_software_api)
+
+    session_sys_user_api = config.get('API', "sys_user_group")
+    session_sys_user = client.resource(api_path=session_sys_user_api)
+
+    session_location_api = config.get('API', "cmn_location")
+    session_location = client.resource(api_path=session_location_api)
+
+    #Dict
+    data = dict()
+    software_full_list = dict()
+
+    #Path Location
+    path = make_folder()
+
+    sleep(.2)
+
+    file_name = f"Reports/{now_date}/{api_table_name}_{now_date}_Report.xlsx"
+    wb = Workbook()
+    wb.save(file_name)
+
+    #Database
     cnxn, cursor = DC.new_database_connection()
+
+    #Timer
     start = time()
-
-    cmdb_ci_computer_api = config.get("API", "cmdb_ci_computer")
-    cmdb_ci_computer = c.resource(api_path=cmdb_ci_computer_api)
-
 
     #Offset parameter from function arg to start record from api call
     offset_parameter = entry_offset
     limit_parameter = limit_count
 
-    queryBuilder = pysnow.QueryBuilder().field('ip_address').is_not_empty()
+    #Query Builder
+    queryBuilder = pysnow.QueryBuilder().field('ip_address').is_not_empty().AND().field('serial_number').is_not_empty()
+    
+    #FUNCTIONS
+    def find_software_full():
+        session_software.parameters.exclude_reference_link = True
+        
+        query_builder = pysnow.QueryBuilder()\
+        .field('installed_on').equals(data['sys_id'])
 
-    try:
-        cmdb_computer_response = cmdb_ci_computer.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
+        responses = session_software.get(query=query_builder)
 
         try:
-            for response in cmdb_computer_response.all():
+            if good_record():
+                for response in responses.all():
+                    if response is not None:
+                        if response['primary_key'] in software_full_list.keys():
+                            software_full_list.update({response['primary_key'] : software_full_list.get(response['primary_key']) + 1})
+
+                        else:
+                            software_full_list.update({response['primary_key'] : 1})
+                    else:
+                        write_file(f"{path}/no_result_host.txt", f"{data['server_name'] : 'No Software Found'}")
+        
+        except pysnow.exceptions.NoResults:
+            print(f"NO RESULT ERROR FROM {data['server_name']}")
+                
+    
+    def find_software(name, software_name = "", without_publisher=False):
+            session_software.parameters.exclude_reference_link = True
+
+            if without_publisher == False:
+                query_builder = pysnow.QueryBuilder()\
+                .field('publisher').contains(name)\
+                .AND().field("display_name").contains(software_name)\
+                .AND().field('installed_on').equals(data['sys_id'])
+
+            else:
+                query_builder = pysnow.QueryBuilder()\
+                .field("display_name").contains(software_name)\
+                .AND().field('installed_on').equals(data['sys_id'])    
+            
+            responses = session_software.get(query=query_builder, limit=1)
+
+            try:
+                for response in responses.all():
+                    if response['publisher'] == name or software_name.lower() in response['display_name'].lower():
+                        data[f'{name.lower()}_installed'] = 1
+
+            except Exception as e:
+                print(e)
+
+
+    def write_file(file_name, data):
+        with open(f'{file_name}.txt', 'a+') as f:
+            f.write(data)
+
+    def get_sys_owner(sys_id):
+        responses = session_sys_user.get(query = {"sys_id": sys_id})
+
+        for response in responses.all():
+            return response['name']
+        
+    def get_location(sys_id):
+        responses = session_location.get(query = {"sys_id": sys_id})
+
+        for response in responses.all():
+            return response['name']
+        
+    def good_record():
+        return data['operational_status'] == "Operational" \
+            and data['install_status'] == "Operational" \
+            and int(data['total_days']) <= 15
+
+    def compare_data(data, report_name, search):
+        report_dataframe = pd.read_csv(report_name)
+
+        #IF GOOD RECORD
+        if good_record()\
+            and data[search] == 0:
+
+                #WRITE GOOD RECORDS NA SERVICENOW
+                if search == "crowdstrike_installed":
+                    write_file(f"{path}/NA_SNOW_{search}_{api_table_name}_{now_date}.txt", f"{data['server_name']} : {data['serial_number']}\n")
+
+                #NOT IN SNOW AND NOT FOUND IN COMPARABLE DATA Crowdstrike
+                if search == "crowdstrike_installed" and report_dataframe['Serial Number'].eq(data['serial_number']).sum() == 0:
+                    write_file(f"{path}/NA_Both_{search}_{api_table_name}_{now_date}.txt", f"{data['server_name']} : {data['serial_number']}\n")
+
+                #WRITE GOOD RECORDS NA SERVICENOW
+                if search == "datadog_installed":
+                    write_file(f"{path}/NA_SNOW_{search}_{api_table_name}_{now_date}.txt", f"{data['server_name']} : {data['serial_number']}\n")
+
+                #NOT IN SNOW AND NOT FOUND IN COMPARABLE DATA Datadog
+                if search == "datadog_installed" and report_dataframe['server_name'].eq(data['server_name']).sum() == 0:
+                    write_file(f"{path}/NA_Both_{search}_{api_table_name}_{now_date}.txt", f"{data['server_name']} : {data['serial_number']}\n")
+
+    try:
+        api_responses = session.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
+
+        try:
+            for response in api_responses.all():
                 encrypt_computer_name = encrypt_data(response['name'].replace("formerly: ", "").lower().encode())
                 encrypt_default_gateway = encrypt_data(response['default_gateway'].lower().encode())
                 encrypt_ip = encrypt_data(response['ip_address'].lower().encode())
 
-                data['computer_name'] = encrypt_computer_name
-                data['ip_address'] = encrypt_ip
-                data['default_gateway'] = encrypt_default_gateway
+                data['computer_name'] = response['name']
+                data['ip_address'] = response['ip_address']
+                data['default_gateway'] = response['default_gateway']
                 data['operational_status'] = operational_status_mapping.get(response['operational_status'])
+                data['install_status'] = install_status_mapping.get(response['install_status'])
                 data['server_operating_system'] = response['os']
                 data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
                 data['mac_address'] = response['mac_address'].strip().replace(":","-")
                 data['sys_id'] = response['sys_id']
                 data['created_date'] = now_date
-                data['api_table'] = cmdb_ci_computer_api
+                data['api_table'] = api_table_name
                 data['first_discovered'] = now_date if response['first_discovered'] == "" else response['first_discovered'].strip().split(" ")[0]
                 data['last_discovered'] = data['first_discovered'] if response['last_discovered'] == "" else response['last_discovered'].strip().split(" ")[0]
                 data['discovery_source'] = response['discovery_source']
                 data['total_days'] = days_between(now_date, data['last_discovered'])
                 data['serial_number'] = response['serial_number']
+                data['managed_by_group'] = "" if response['managed_by_group'] == "" else get_sys_owner(response['managed_by_group']['value'])
+                data['location'] = "" if response['location'] == "" else get_location(response['location']['value'])
+                data['microsoft_configuration_client_installed'] = 0
+                data['crowdstrike_installed'] = 0
+                data['tenable_installed'] = 0
+                data['datadog_installed'] = 0
+                data['mcafee_installed'] = 0
+                data['troubleshooting_tools_installed'] = 0
 
-                try:
-                    query_insert = "INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-                    parameter = data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'], data['server_model_id'], data['mac_address'], data['sys_id'], data['created_date'], data['api_table'], data['first_discovered'], data['last_discovered'], data['discovery_source'], data['total_days'], data['serial_number']
+                find_software_full()
 
-                    cursor.execute(query_insert, parameter)
-                    cnxn.commit()
+                if api_table_name in software_list_windows:
+                    find_software("CrowdStrike", "Control")
+                    find_software("Tenable", "Agent")
+                    find_software("Datadog", "Agent")
+                    find_software('McAfee', "Agent")
+                    find_software("microsoft_configuration_client", "Configuration Manager Client", True)
+                    find_software("troubleshooting_tools", "WinPcap", True)
+                
+                if api_table_name in software_list_linux:
+                    find_software("crowdstrike", "falcon-sensor", True)
+                    find_software("tenable", "NessusAgent", True)
+                    find_software("Datadog", "Agent")
 
-                except Exception as e:
-                    print(f"Failed to insert data for {response}", "\n", e)
+                compare_data(data, "Crowdstrike_Reports/3372_hosts_2023-05-24T18_13_10Z.csv", "crowdstrike_installed")
+                compare_data(data, "Datadog_Reports/2023-05-23_DataDog.csv", "datadog_installed")
+            
+            write_file(f"{path}/Dictionary_{api_table_name}_{now_date}.txt", json.dumps(software_full_list, indent=4) + '\n')
+
+            set_dataframe(full_dataframe, data)
+            
+                # try:
+                #     query_insert = "INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                #     parameter = data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'], data['server_model_id'], data['mac_address'], data['sys_id'], data['created_date'], data['api_table'], data['first_discovered'], data['last_discovered'], data['discovery_source'], data['total_days'], data['serial_number']
+
+                #     cursor.execute(query_insert, parameter)
+                #     cnxn.commit()
+
+                # except Exception as e:
+                #     print(f"Failed to insert data for {response}", "\n", e)
 
         except Exception as e:
             print("Failed at loop response", "\n", e)
@@ -226,156 +385,5 @@ async def get_cmdb_computer(entry_offset, limit_count, thread_number):
 
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
-
-
-def get_data_equals(api, query_builder_field = "", query_builder_search = ""):
-    global data
-    global owners
-
-    responses = api.get(query= {query_builder_field: query_builder_search})
-
-    if api == sys_user_group:
-        for sys_user_group_data in responses.all():
-            owners = []
-            try:
-                owners.append(sys_user_group_data['u_l3_leader']['link'].split("/")[-1])
-            except:
-                pass
-
-            try:
-                owners.append(sys_user_group_data['u_l4_leader']['link'].split("/")[-1])
-            except:
-                pass
-
-    if api == vulnerability_entry:
-        for vul_entry_data in responses.all():
-            data['ten_vul_name'] = vul_entry_data["name"]
-            data["ten_solution"] = vul_entry_data['solution']
-            data['ten_id_name'] = vul_entry_data['id']
-            data['date_published'] = vul_entry_data['date_published']
-
-    return data, software, owners
-
-def check_owners(api, query_builder_field):
-    get_data_equals(sys_user_group, "sys_id", data['assignment_group'])
-    count = 1
-
-    for owner in owners:
-        responses = api.get(query = {query_builder_field: owner})
-
-        for user_data in responses.all():
-            data[f"owner_{count}_name"] = user_data['name']
-            data[f'owner_{count}_email'] = user_data['email']
-            count += 1
-
-    return data
-
-async def check_servers(api_table, comparable_data=""):
-
-
-    #FUNCTIONS
-    def apply_background_color(rows):
-        if rows['operational_status'] == "Operational" \
-            and rows['install_status'] == "Operational" \
-            and int(rows['total_days']) <= 15:
-            return ['background-color: green' for row in rows]
-        
-        else:
-            return ['background-color: red' for row in rows]
-        
-    def align_center(rows):
-        return ['text-align: center' for row in rows]
-    
-    def find_software(name, software_name = "", without_publisher=False):
-            cmdb_sam_sw_install.parameters.exclude_reference_link = True
-
-            if without_publisher == False:
-                query_builder = pysnow.QueryBuilder()\
-                .field('publisher').equals(name)\
-                .AND().field("display_name").contains(software_name)\
-                .AND().field('installed_on').equals(data['sys_id'])
-
-            else:
-                query_builder = pysnow.QueryBuilder()\
-                .field("display_name").contains(software_name)\
-                .AND().field('installed_on').equals(data['sys_id'])    
-            
-            responses = cmdb_sam_sw_install.get(query=query_builder, limit=1)
-
-            for response in responses.all():
-                if response['publisher'] == name or software_name.lower() in response['display_name'].lower():
-                    data[f'{name.lower()}_installed'] = 1
-
-    def write_file(file_name, data):
-        with open(f'{file_name}.txt', 'a+') as f:
-            f.write(data)
-
-    def compare_data(data, report_name, search):
-        report_dataframe = pd.read_csv(report_name)
-
-        #IF GOOD RECORD
-        if data['operational_status'] == "Operational" \
-            and data['install_status'] == "Operational" \
-            and int(data['total_days']) <= 15\
-            and data[search] == 0:
-                
-                 #WRITE GOOD RECORDS NO SERVICENOW
-                write_file(f"NA_ServiceNow_{search}_{api_table}.txt", f"{data['server_name']} : {data['serial_number']}\n")
-
-                #NOT IN SNOW AND NOT FOUND IN COMPARABLE DATA
-                if report_dataframe['Serial Number'].eq(data['serial_number']).sum() == 0:
-                    write_file(f"NA_Both_{search}_{api_table}.txt", f"{data['server_name']} : {data['serial_number']}\n")
-
-    with pd.ExcelWriter(f"Reports/{now_date}_Report.xlsx", mode='w', engine="openpyxl") as writer:
-        full_asset_dataframe = pd.DataFrame()
-
-        server_query_builder = pysnow.QueryBuilder().field('ip_address').is_not_empty().AND().field('serial_number').is_not_empty()
-        responses = api_table.get(query=server_query_builder)
-
-        for response in responses.all():
-            encrypt_server_name = encrypt_data(response['name'].replace("formerly: ", "").lower().encode())
-            encrypt_default_gateway = encrypt_data(response['default_gateway'].lower().encode())
-            encrypt_ip = encrypt_data(response['ip_address'].lower().encode())
-
-            data['server_name'] = response['name']
-            data['ip_address'] = response['ip_address']
-            data['default_gateway'] = response['default_gateway']
-            data['operational_status'] = operational_status_mapping.get(response['operational_status'])
-            data['install_status'] = install_status_mapping.get(response['install_status'])
-            data['server_operating_system'] = response['os']
-            data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
-            data['mac_address'] = response['mac_address'].strip().replace(":","-")
-            data['sys_id'] = response['sys_id']
-            data['created_date'] = now_date
-            data['api_table'] = "cmdb_ci_win_server"
-            data['first_discovered'] = now_date if response['first_discovered'] == "" else response['first_discovered'].strip().split(" ")[0]
-            data['last_discovered'] = data['first_discovered'] if response['last_discovered'] == "" else response['last_discovered'].strip().split(" ")[0]
-            data['discovery_source'] = response['discovery_source']
-            data['total_days'] = days_between(now_date, data['last_discovered'])
-            data['serial_number'] = response['serial_number']
-            data['microsoft_configuration_client_installed'] = 0
-            data['crowdstrike_installed'] = 0
-            data['tenable_installed'] = 0
-            data['datadog_installed'] = 0
-            data['mcafee_installed'] = 0
-            data['troubleshooting_tools_installed'] = 0
-
-            find_software("CrowdStrike", "Control")
-            find_software("Tenable", "Agent")
-            find_software("Datadog", "Agent")
-            find_software('McAfee', "Agent")
-            find_software("microsoft_configuration_client", "Configuration Manager Client", True)
-            find_software("troubleshooting_tools", "WinPcap", True)
-
-            compare_data(data, "Crowdstrike_Reports/6013_hosts_2023-05-12T16_58_03Z.csv", "crowdstrike_installed")
-
-            full_asset_dataframe = pd.concat([full_asset_dataframe, pd.DataFrame(pd.json_normalize(data))])
-
-        full_asset_dataframe.reset_index(drop=True)\
-        .style.apply(align_center)\
-        .apply(apply_background_color, axis=1)\
-        .to_excel(writer, sheet_name=f"Asset Report", engine='openpyxl')
-
-        auto_adjust_xlsx_column_width(full_asset_dataframe, writer, sheet_name="Asset Report", margin=0)
-
-dftest = pd.read_csv("Crowdstrike_Reports/6013_hosts_2023-05-12T16_58_03Z.csv")
+    write_to_excel(api_table_name, full_dataframe)
+    print(full_dataframe)
