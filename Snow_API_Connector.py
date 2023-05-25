@@ -173,7 +173,7 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
 
 async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number):
-    global dataframe
+    global full_dataframe
 
     #Create client object
     client = pysnow.Client(instance=instance, user=username, password=password)
