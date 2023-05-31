@@ -1,11 +1,56 @@
 import Database.DB_Connection as DC
 from Snow_API_Initial_Data import *
 
-full_dataframe = pd.DataFrame()
+computer_dataframe = pd.DataFrame()
+window_dataframe = pd.DataFrame()
+linux_dataframe = pd.DataFrame()
+esx_dataframe = pd.DataFrame()
+count_mapping = dict()
 
-def set_dataframe(new_dataframe, data):
-    global full_dataframe
-    full_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
+def set_count_mapping(class_name):
+    global count_mapping
+
+    return count_mapping.update({class_name : 0})
+
+def update_count_mapping(class_name):
+    global count_mapping
+
+    return count_mapping.update({class_name : (count_mapping.get(class_name) + 1)})
+
+def get_count_mapping():
+    return count_mapping
+
+def set_computer_dataframe(new_dataframe, data):
+    global computer_dataframe
+
+    computer_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_computer_dataframe():
+    return computer_dataframe
+
+def set_window_dataframe(new_dataframe, data):
+    global window_dataframe
+
+    window_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_window_dataframe():
+    return window_dataframe
+
+def set_linux_dataframe(new_dataframe, data):
+    global linux_dataframe
+
+    linux_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_linux_dataframe():
+    return linux_dataframe
+
+def set_esx_dataframe(new_dataframe, data):
+    global esx_dataframe
+
+    esx_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_esx_dataframe():
+    return esx_dataframe
 
 def make_folder():
     path = f"Reports/{now_date}"
@@ -173,7 +218,9 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
 
 async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number):
-    global full_dataframe
+    #Dict
+    data = dict()
+    software_full_list = dict()
 
     #Create client object
     client = pysnow.Client(instance=instance, user=username, password=password)
@@ -191,16 +238,12 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
     session_location_api = config.get('API', "cmn_location")
     session_location = client.resource(api_path=session_location_api)
 
-    #Dict
-    data = dict()
-    software_full_list = dict()
-
     #Path Location
     path = make_folder()
 
     sleep(.2)
 
-    file_name = f"Reports/{now_date}/{api_table_name}_{now_date}_Report.xlsx"
+    file_name = f"Reports/{now_date}/Full_Report_{now_date}_Report.xlsx"
     wb = Workbook()
     wb.save(file_name)
 
@@ -236,10 +279,10 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                         else:
                             software_full_list.update({response['primary_key'] : 1})
                     else:
-                        write_file(f"{path}/no_result_host.txt", f"{data['server_name'] : 'No Software Found'}")
+                        write_file(f"{path}/no_result_host.txt", f"{data['computer_name'] : 'No Software Found'}")
         
         except pysnow.exceptions.NoResults:
-            print(f"NO RESULT ERROR FROM {data['server_name']}")
+            print(f"NO RESULT ERROR FROM {data['computer_name']}")
                 
     
     def find_software(name, software_name = "", without_publisher=False):
@@ -285,8 +328,26 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
         
     def good_record():
         return data['operational_status'] == "Operational" \
-            and data['install_status'] == "Operational" \
+            and data['install_status'] == "Installed" \
             and int(data['total_days']) <= 15
+    
+    def bad_record():
+        return data['operational_status'] == "Operational" \
+        and data['install_status'] == "Installed" \
+        and int(data['total_days']) > 15
+    
+    def initial_count_map():
+        set_count_mapping(response['sys_class_name'] + "_good")
+        set_count_mapping(response['sys_class_name'] + "_needs_review")
+        set_count_mapping(response['sys_class_name'] + "_retired")
+
+    def get_good_bad_records():
+        if good_record():
+            return update_count_mapping(response['sys_class_name'] + "_good")
+        elif bad_record():
+            return update_count_mapping(response['sys_class_name'] + "_needs_review")
+        else:
+            return update_count_mapping(response['sys_class_name'] + "_retired")
 
     def compare_data(data, report_name, search):
         report_dataframe = pd.read_csv(report_name)
@@ -297,19 +358,19 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
 
                 #WRITE GOOD RECORDS NA SERVICENOW
                 if search == "crowdstrike_installed":
-                    write_file(f"{path}/NA_SNOW_{search}_{api_table_name}_{now_date}.txt", f"{data['server_name']} : {data['serial_number']}\n")
+                    write_file(f"{path}/SNOW_Only_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']}\n")
 
                 #NOT IN SNOW AND NOT FOUND IN COMPARABLE DATA Crowdstrike
                 if search == "crowdstrike_installed" and report_dataframe['Serial Number'].eq(data['serial_number']).sum() == 0:
-                    write_file(f"{path}/NA_Both_{search}_{api_table_name}_{now_date}.txt", f"{data['server_name']} : {data['serial_number']}\n")
+                    write_file(f"{path}/SNOW_AND_CROWD_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']}\n")
 
                 #WRITE GOOD RECORDS NA SERVICENOW
                 if search == "datadog_installed":
-                    write_file(f"{path}/NA_SNOW_{search}_{api_table_name}_{now_date}.txt", f"{data['server_name']} : {data['serial_number']}\n")
+                    write_file(f"{path}/SNOW_Only_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']}\n")
 
                 #NOT IN SNOW AND NOT FOUND IN COMPARABLE DATA Datadog
-                if search == "datadog_installed" and report_dataframe['server_name'].eq(data['server_name']).sum() == 0:
-                    write_file(f"{path}/NA_Both_{search}_{api_table_name}_{now_date}.txt", f"{data['server_name']} : {data['serial_number']}\n")
+                if search == "datadog_installed" and report_dataframe['server_name'].eq(data['computer_name']).sum() == 0:
+                    write_file(f"{path}/SNOW_AND_DataDog_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']}\n")
 
     try:
         api_responses = session.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
@@ -345,28 +406,46 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                 data['mcafee_installed'] = 0
                 data['troubleshooting_tools_installed'] = 0
 
-                find_software_full()
-
-                if api_table_name in software_list_windows:
+                if response['sys_class_name'] in software_list_windows:
                     find_software("CrowdStrike", "Control")
                     find_software("Tenable", "Agent")
                     find_software("Datadog", "Agent")
                     find_software('McAfee', "Agent")
                     find_software("microsoft_configuration_client", "Configuration Manager Client", True)
                     find_software("troubleshooting_tools", "WinPcap", True)
-                
-                if api_table_name in software_list_linux:
+
+                #CHECKS IF LINUX
+                if response['sys_class_name'] in software_list_linux:
                     find_software("crowdstrike", "falcon-sensor", True)
                     find_software("tenable", "NessusAgent", True)
                     find_software("Datadog", "Agent")
+                    
+                #DIFFERENT DATAFRAME FOR EXCEL BASED ON CLASS NAME
+                if response['sys_class_name'] == "cmdb_ci_computer":
+                    set_computer_dataframe(computer_dataframe, data)
+
+                if response['sys_class_name'] == "cmdb_ci_win_server":
+                    set_window_dataframe(window_dataframe, data)
+
+                if response['sys_class_name'] == "cmdb_ci_linux_server":
+                    set_linux_dataframe(linux_dataframe, data)
+
+                if response['sys_class_name'] == "cmdb_ci_esx_server":
+                    set_esx_dataframe(esx_dataframe, data)
+                    
+                #REVISES COUNTS BASED ON GOOD/BAD/RETIRED RECORDS
+                if (response['sys_class_name'] + "_good") not in count_mapping.keys():
+                    initial_count_map()
+                    get_good_bad_records()
+
+                else:
+                    get_good_bad_records()
+                
+                # find_software_full()
 
                 compare_data(data, "Crowdstrike_Reports/3372_hosts_2023-05-24T18_13_10Z.csv", "crowdstrike_installed")
                 compare_data(data, "Datadog_Reports/2023-05-23_DataDog.csv", "datadog_installed")
-            
-            write_file(f"{path}/Dictionary_{api_table_name}_{now_date}.txt", json.dumps(software_full_list, indent=4) + '\n')
 
-            set_dataframe(full_dataframe, data)
-            
                 # try:
                 #     query_insert = "INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
                 #     parameter = data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'], data['server_model_id'], data['mac_address'], data['sys_id'], data['created_date'], data['api_table'], data['first_discovered'], data['last_discovered'], data['discovery_source'], data['total_days'], data['serial_number']
@@ -385,5 +464,3 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
 
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
-    write_to_excel(api_table_name, full_dataframe)
-    print(full_dataframe)
