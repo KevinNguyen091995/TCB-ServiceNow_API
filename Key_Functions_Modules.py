@@ -56,6 +56,11 @@ def apply_background_color(rows):
         and int(rows['total_days']) <= 15:
         return ['background-color: green' for row in rows]
     
+    elif rows['operational_status'] == "Operational" \
+        and rows['install_status'] == "Installed" \
+        and int(rows['total_days']) > 15:
+        return ['background-color: orange' for row in rows]
+    
     else:
         return ['background-color: red' for row in rows]
     
@@ -63,12 +68,43 @@ def align_center(rows):
     return ['text-align: center' for row in rows]
 
 def write_to_excel(api_table_name, dataframe):
-    file_name = f"Reports/{now_date}/{api_table_name}_{now_date}_Report.xlsx"
+    file_name = f"Reports/{now_date}/Full_Report_{now_date}_Report.xlsx"
 
-    with pd.ExcelWriter(file_name, mode='w', engine="openpyxl") as writer:
+    with pd.ExcelWriter(file_name, mode='a', engine="openpyxl") as writer:
         dataframe.reset_index(drop=True)\
         .style.apply(align_center)\
         .apply(apply_background_color, axis=1)\
-        .to_excel(writer, sheet_name=f"Asset Report", index=False)
+        .to_excel(writer, sheet_name=api_table_name, index=False)
 
-        auto_adjust_xlsx_column_width(dataframe, writer, sheet_name="Asset Report", margin=0)
+def write_to_text(api_name, good_count, review_count, bad_count, software_installed, supported, location, managed_by, managed_by_group):
+    total_count = good_count + bad_count + review_count
+
+    file_name = f"Reports/{now_date}/Full_Counts_{now_date}_Report.txt"
+
+    def divide(x,y):
+        try:
+            return round(x/y, 2)
+        except ZeroDivisionError:
+            return 0
+
+    template = f"""{api_name}
+
+    Records in CMDB Discovery
+        {total_count - review_count}/{total_count} - Total High Confidence
+            {good_count}/{total_count} - ({divide(good_count, total_count) * 100}%) Count of high confidence asset ci_record "operational" per MID server age of total days "<15 days" and operational status = "Operational" and install status "Installed"
+			{bad_count}/{total_count} - ({divide(bad_count, total_count) * 100}%)- Count of high confidence asset ci_record "retired" per MID server age of total days">16 days" operational status = "Retired" and install status "Retired"
+
+        {review_count}/{total_count} - Total Low Confidence
+            {review_count}/{total_count} - ({divide(review_count, total_count) * 100}%) - Count of low confidence asset ci_record "retired" per MID server age of total days">16 days" operational status = "Operational"
+
+    High Confidence CI_Records Completeness	
+		{software_installed}/{total_count} - ({divide(software_installed, total_count) * 100}%) - Count of high confidence asset ci_record "operational" with "Software" field populated.
+		{supported}/{total_count} - ({divide(supported, total_count) * 100}%) - Count of high confidence asset ci_record "operational" with "Supported by" field populated.
+		{location}/{total_count} - ({divide(location, total_count) * 100}%) - Count of high confidence asset ci_record "operational" with "Location" field populated.
+		{managed_by}/{total_count} - ({divide(managed_by, total_count) * 100}%) - Count of high confidence asset ci_record "operational" with "Managed by" field populated.
+		{managed_by_group}/{total_count} - ({divide(managed_by_group, total_count) * 100}%) - Count of high confidence asset ci_record "operational" with "Managed by group" field populated. 
+    \n
+    """
+
+    with open(f'{file_name}.txt', 'a+') as f:
+        f.write(template)

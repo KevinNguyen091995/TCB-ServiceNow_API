@@ -80,6 +80,3 @@ install_status_mapping = {
     '1' : 'Installed',
     '7' : 'Retired'
 }
-
-software_list_linux = ['cmdb_ci_linux_server ', 'cmdb_ci_unix_server ', 'cmdb_ci_esx_server ']
-software_list_windows = ['cmdb_ci_win_server ', 'cmdb_ci_computer']

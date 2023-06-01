@@ -15,31 +15,45 @@ def get_count_vulnerability_thread_call():
         join_thread.join()
 
 def get_api_thread():
-    global full_dataframe
-
-    total_threads = 2
+    total_threads = 16
     thread_array = []
 
+    def generate_report(sheet_name, api_name):
+        dataframe = {
+            "cmdb_ci_computer" : get_computer_dataframe(),
+            "cmdb_ci_win_server" : get_window_dataframe(),
+            "cmdb_ci_linux_server" : get_linux_dataframe(),
+            "cmdb_ci_esx_server" : get_esx_dataframe(),
+        }
+
+        good, review, retired = get_total_class_count_mapping(api_name)
+        software_installed, supported, location, managed_by, managed_by_group = get_total_field_count_mapping(api_name)
+
+        print(software_installed, supported, location, managed_by, managed_by_group)
+
+        write_to_excel(sheet_name, dataframe.get(api_name))
+        write_to_text(api_name, good, review, retired, software_installed, supported, location, managed_by, managed_by_group)
+
+
+    #Names of APIs currently used
+    #['cmdb_ci_computer', 'cmdb_ci_win_server', 'cmdb_ci_linux_server', 'cmdb_ci_esx_server']
+
     for thread in range(total_threads):
-        thread_array.append(threading.Thread(target=callback_thread, args=(get_api_asset, "cmdb_ci_computer", (thread * 1), 1, thread+1)))
+        thread_array.append(threading.Thread(target=callback_thread, args=(get_api_asset, "cmdb_ci_computer", (thread * 5), 5, thread+1)))
         sleep(.1)
         thread_array[-1].start()
 
     for join_thread in thread_array:
         join_thread.join()
 
-    print(full_dataframe)
+    #Workstations
+    generate_report("Workstation", "cmdb_ci_computer")
 
-def get_server_thread_call():
-    win_server = threading.Thread(target=callback_thread, args=(check_servers, cmdb_ci_win_server, "cmdb_ci_win_server"))
-    linux_server = threading.Thread(target=callback_thread, args=(check_servers, cmdb_ci_linux_server, "cmdb_ci_linux_server"))
-    unix_server = threading.Thread(target=callback_thread, args=(check_servers, cmdb_ci_unix_server, "cmdb_ci_unix_server"))
-    esx_server = threading.Thread(target=callback_thread, args=(check_servers, cmdb_ci_esx_server, "cmdb_ci_esx_server"))
+    #Windows Server
+    generate_report("Window Server", "cmdb_ci_win_server")
 
-    win_server.start()
-    sleep(1)
-    linux_server.start()
-    sleep(1)
-    unix_server.start()
-    sleep(1)
-    esx_server.start()
+    #Linux Server
+    generate_report("Linux Server", "cmdb_ci_linux_server")
+
+    #ESX Server
+    generate_report("ESX Server", "cmdb_ci_esx_server")

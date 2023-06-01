@@ -5,25 +5,76 @@ computer_dataframe = pd.DataFrame()
 window_dataframe = pd.DataFrame()
 linux_dataframe = pd.DataFrame()
 esx_dataframe = pd.DataFrame()
-count_mapping = dict()
+class_count_mapping = dict()
+total_count_mapping = dict()
+field_count_mapping = dict()
+excel_list = ['cmdb_ci_computer', 'cmdb_ci_win_server', 'cmdb_ci_linux_server', 'cmdb_ci_esx_server']
+software_list_linux = ['cmdb_ci_linux_server', 'cmdb_ci_unix_server', 'cmdb_ci_esx_server']
+software_list_windows = ['cmdb_ci_win_server', 'cmdb_ci_computer']
 
-def set_count_mapping(class_name):
-    global count_mapping
+def set_class_count_mapping(class_name):
+    global class_count_mapping
 
-    return count_mapping.update({class_name : 0})
+    return class_count_mapping.update({class_name : 0})
 
-def update_count_mapping(class_name):
-    global count_mapping
+def update_class_count_mapping(class_name):
+    global class_count_mapping
 
-    return count_mapping.update({class_name : (count_mapping.get(class_name) + 1)})
+    return class_count_mapping.update({class_name : (class_count_mapping.get(class_name) + 1)})
 
-def get_count_mapping():
-    return count_mapping
+def get_class_count_mapping():
+    return class_count_mapping
+
+def set_field_count_mapping(class_name):
+    global field_count_mapping
+
+    return field_count_mapping.update({class_name : 0})
+
+def update_field_count_mapping(class_name):
+    global field_count_mapping
+
+    return field_count_mapping.update({class_name : (field_count_mapping.get(class_name) + 1)})
+
+def get_field_count_mapping():
+    return field_count_mapping
+
+def get_total_class_count_mapping(name):
+    good, review, retired = 0, 0, 0
+
+    for key, value in class_count_mapping.items():
+        if key.startswith(name + "_good"):
+            good = value
+        elif key.startswith(name + "_needs_review"):
+            review = value
+        elif key.startswith(name + "_retired"):
+            retired = value
+
+    return good, review, retired
+
+def get_total_field_count_mapping(name):
+    software, supported, location, managed_by_team, managed_by_group = 0, 0, 0, 0, 0
+
+    for key, value in field_count_mapping.items():
+        if key.startswith(name + "_software"):
+            software = value
+        elif key.startswith(name + "_supported"):
+            supported = value
+        elif key.startswith(name + "_location"):
+            location = value
+        elif key.startswith(name + "_managed_by_team"):
+            managed_by_team = value
+        elif key.startswith(name + "_managed_by_group"):
+            managed_by_group = value
+
+    print(software, supported, location, managed_by_team, managed_by_group)
+
+    return software, supported, location, managed_by_team, managed_by_group
 
 def set_computer_dataframe(new_dataframe, data):
     global computer_dataframe
 
     computer_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
+    sleep(.25)
 
 def get_computer_dataframe():
     return computer_dataframe
@@ -258,10 +309,12 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
     limit_parameter = limit_count
 
     #Query Builder
-    queryBuilder = pysnow.QueryBuilder().field('ip_address').is_not_empty().AND().field('serial_number').is_not_empty()
+    queryBuilder = pysnow.QueryBuilder().field('serial_number').is_not_empty()
     
     #FUNCTIONS
     def find_software_full():
+        software_count = 0
+
         session_software.parameters.exclude_reference_link = True
         
         query_builder = pysnow.QueryBuilder()\
@@ -274,15 +327,17 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                 for response in responses.all():
                     if response is not None:
                         if response['primary_key'] in software_full_list.keys():
+                            software_count += 1
                             software_full_list.update({response['primary_key'] : software_full_list.get(response['primary_key']) + 1})
 
                         else:
+                            software_count += 1
                             software_full_list.update({response['primary_key'] : 1})
-                    else:
-                        write_file(f"{path}/no_result_host.txt", f"{data['computer_name'] : 'No Software Found'}")
         
         except pysnow.exceptions.NoResults:
             print(f"NO RESULT ERROR FROM {data['computer_name']}")
+    
+        return software_count
                 
     
     def find_software(name, software_name = "", without_publisher=False):
@@ -336,18 +391,49 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
         and data['install_status'] == "Installed" \
         and int(data['total_days']) > 15
     
-    def initial_count_map():
-        set_count_mapping(response['sys_class_name'] + "_good")
-        set_count_mapping(response['sys_class_name'] + "_needs_review")
-        set_count_mapping(response['sys_class_name'] + "_retired")
+    def retired_record():
+        return data['operational_status'] == "Retired" \
+        and data['install_status'] == "Retired" \
+        or \
+        data['operational_status'] == "Non-Operational"\
+        and data['install_status'] == "Retired" \
+            
+    def initial_count_count_map():
+        set_class_count_mapping(response['sys_class_name'] + "_good")
+        set_class_count_mapping(response['sys_class_name'] + "_needs_review")
+        set_class_count_mapping(response['sys_class_name'] + "_retired")
 
-    def get_good_bad_records():
+    def initial_field_count_map():
+        set_field_count_mapping(response['sys_class_name'] + "_software")
+        set_field_count_mapping(response['sys_class_name'] + "_supported")
+        set_field_count_mapping(response['sys_class_name'] + "_location")
+        set_field_count_mapping(response['sys_class_name'] + "_managed_by_team")
+        set_field_count_mapping(response['sys_class_name'] + "_managed_by_group")
+
+    def count_mapping_record_review():
         if good_record():
-            return update_count_mapping(response['sys_class_name'] + "_good")
+            return update_class_count_mapping(response['sys_class_name'] + "_good")
         elif bad_record():
-            return update_count_mapping(response['sys_class_name'] + "_needs_review")
+            return update_class_count_mapping(response['sys_class_name'] + "_needs_review")
         else:
-            return update_count_mapping(response['sys_class_name'] + "_retired")
+            return update_class_count_mapping(response['sys_class_name'] + "_retired")
+        
+    def field_mapping_record_review():
+        if good_record() or retired_record():
+            if data['software_count'] > 0:
+                update_field_count_mapping(response['sys_class_name'] + "_software")
+            
+            if data['supported_by'] is not None and data['supported_by'] != "":
+                update_field_count_mapping(response['sys_class_name'] + "_supported")
+            
+            if data['location'] is not None and data['location'] != "":
+                update_field_count_mapping(response['sys_class_name'] + "_location")
+            
+            if data['managed_by'] is not None and data['managed_by'] != "":
+                update_field_count_mapping(response['sys_class_name'] + "_managed_by_team")
+            
+            if data['managed_by_group'] is not None and data['managed_by_group'] != "":
+                update_field_count_mapping(response['sys_class_name'] + "_managed_by_group")
 
     def compare_data(data, report_name, search):
         report_dataframe = pd.read_csv(report_name)
@@ -397,8 +483,11 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                 data['discovery_source'] = response['discovery_source']
                 data['total_days'] = days_between(now_date, data['last_discovered'])
                 data['serial_number'] = response['serial_number']
+                data['supported_by'] = response['supported_by']
+                data['managed_by'] = response['managed_by']
                 data['managed_by_group'] = "" if response['managed_by_group'] == "" else get_sys_owner(response['managed_by_group']['value'])
                 data['location'] = "" if response['location'] == "" else get_location(response['location']['value'])
+                data['software_count'] = find_software_full()
                 data['microsoft_configuration_client_installed'] = 0
                 data['crowdstrike_installed'] = 0
                 data['tenable_installed'] = 0
@@ -406,6 +495,7 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                 data['mcafee_installed'] = 0
                 data['troubleshooting_tools_installed'] = 0
 
+                #CHECK SOFTWARE FOR WINDOWS
                 if response['sys_class_name'] in software_list_windows:
                     find_software("CrowdStrike", "Control")
                     find_software("Tenable", "Agent")
@@ -414,7 +504,7 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                     find_software("microsoft_configuration_client", "Configuration Manager Client", True)
                     find_software("troubleshooting_tools", "WinPcap", True)
 
-                #CHECKS IF LINUX
+                #CHECKS SOFTWARE FOR LINUX
                 if response['sys_class_name'] in software_list_linux:
                     find_software("crowdstrike", "falcon-sensor", True)
                     find_software("tenable", "NessusAgent", True)
@@ -424,27 +514,33 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                 if response['sys_class_name'] == "cmdb_ci_computer":
                     set_computer_dataframe(computer_dataframe, data)
 
-                if response['sys_class_name'] == "cmdb_ci_win_server":
+                elif response['sys_class_name'] == "cmdb_ci_win_server":
                     set_window_dataframe(window_dataframe, data)
 
-                if response['sys_class_name'] == "cmdb_ci_linux_server":
+                elif response['sys_class_name'] == "cmdb_ci_linux_server":
                     set_linux_dataframe(linux_dataframe, data)
 
-                if response['sys_class_name'] == "cmdb_ci_esx_server":
+                elif response['sys_class_name'] == "cmdb_ci_esx_server":
                     set_esx_dataframe(esx_dataframe, data)
                     
                 #REVISES COUNTS BASED ON GOOD/BAD/RETIRED RECORDS
-                if (response['sys_class_name'] + "_good") not in count_mapping.keys():
-                    initial_count_map()
-                    get_good_bad_records()
+                if (response['sys_class_name'] + "_good") not in class_count_mapping.keys():
+                    initial_count_count_map()
+                    count_mapping_record_review()
 
                 else:
-                    get_good_bad_records()
-                
-                # find_software_full()
+                    count_mapping_record_review()
 
-                compare_data(data, "Crowdstrike_Reports/3372_hosts_2023-05-24T18_13_10Z.csv", "crowdstrike_installed")
-                compare_data(data, "Datadog_Reports/2023-05-23_DataDog.csv", "datadog_installed")
+                if (response['sys_class_name'] + "_supported" not in field_count_mapping.keys()):
+                    initial_field_count_map()
+                    field_mapping_record_review()
+                
+                else:
+                    field_mapping_record_review()
+
+                #COMPARES Crowdstrike and DataDog reports for more accurate measures
+                compare_data(data, "Crowdstrike_Reports/5649_hosts_2023-06-01T16_22_53Z.csv", "crowdstrike_installed")
+                compare_data(data, "Datadog_Reports/2023-06-01_DataDog.csv", "datadog_installed")
 
                 # try:
                 #     query_insert = "INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
@@ -456,6 +552,8 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                 # except Exception as e:
                 #     print(f"Failed to insert data for {response}", "\n", e)
 
+            write_file(f"{path}/Dictionary_{response['sys_class_name']}_{now_date}.txt", json.dumps(software_full_list, indent=4) + '\n')
+            
         except Exception as e:
             print("Failed at loop response", "\n", e)
     
