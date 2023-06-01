@@ -17,6 +17,7 @@ def get_count_vulnerability_thread_call():
 def get_api_thread():
     total_threads = 16
     thread_array = []
+    thread_lock = threading.Lock()
 
     def generate_report(sheet_name, api_name):
         dataframe = {
@@ -39,7 +40,7 @@ def get_api_thread():
     #['cmdb_ci_computer', 'cmdb_ci_win_server', 'cmdb_ci_linux_server', 'cmdb_ci_esx_server']
 
     for thread in range(total_threads):
-        thread_array.append(threading.Thread(target=callback_thread, args=(get_api_asset, "cmdb_ci_computer", (thread * 5), 5, thread+1)))
+        thread_array.append(threading.Thread(target=callback_thread, args=(get_api_asset, "cmdb_ci_computer", (thread * 5), 5, thread+1, thread_lock)))
         sleep(.1)
         thread_array[-1].start()
 

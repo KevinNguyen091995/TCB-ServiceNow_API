@@ -74,7 +74,6 @@ def set_computer_dataframe(new_dataframe, data):
     global computer_dataframe
 
     computer_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
-    sleep(.25)
 
 def get_computer_dataframe():
     return computer_dataframe
@@ -268,7 +267,7 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
 
-async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number):
+async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number, thread_lock):
     #Dict
     data = dict()
     software_full_list = dict()
@@ -512,16 +511,29 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                     
                 #DIFFERENT DATAFRAME FOR EXCEL BASED ON CLASS NAME
                 if response['sys_class_name'] == "cmdb_ci_computer":
-                    set_computer_dataframe(computer_dataframe, data)
+                    if thread_lock.locked != True:
+                        thread_lock.acquire()
+                        set_computer_dataframe(computer_dataframe, data)
+                        thread_lock.release()
 
                 elif response['sys_class_name'] == "cmdb_ci_win_server":
-                    set_window_dataframe(window_dataframe, data)
+                    if thread_lock.locked != True:
+                        thread_lock.acquire()
+                        set_window_dataframe(window_dataframe, data)
+                        thread_lock.release()
 
                 elif response['sys_class_name'] == "cmdb_ci_linux_server":
-                    set_linux_dataframe(linux_dataframe, data)
+                    if thread_lock.locked != True:
+                        thread_lock.acquire()
+                        set_linux_dataframe(linux_dataframe, data)
+                        thread_lock.release()
 
                 elif response['sys_class_name'] == "cmdb_ci_esx_server":
-                    set_esx_dataframe(esx_dataframe, data)
+
+                    if thread_lock.locked != True:
+                        thread_lock.acquire()
+                        set_esx_dataframe(esx_dataframe, data)
+                        thread_lock.release()
                     
                 #REVISES COUNTS BASED ON GOOD/BAD/RETIRED RECORDS
                 if (response['sys_class_name'] + "_good") not in class_count_mapping.keys():
