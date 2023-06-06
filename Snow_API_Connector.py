@@ -1,115 +1,6 @@
 import Database.DB_Connection as DC
 from Snow_API_Initial_Data import *
 
-computer_dataframe = pd.DataFrame()
-window_dataframe = pd.DataFrame()
-linux_dataframe = pd.DataFrame()
-esx_dataframe = pd.DataFrame()
-class_count_mapping = dict()
-total_count_mapping = dict()
-field_count_mapping = dict()
-excel_list = ['cmdb_ci_computer', 'cmdb_ci_win_server', 'cmdb_ci_linux_server', 'cmdb_ci_esx_server']
-software_list_linux = ['cmdb_ci_linux_server', 'cmdb_ci_unix_server', 'cmdb_ci_esx_server']
-software_list_windows = ['cmdb_ci_win_server', 'cmdb_ci_computer']
-
-def set_class_count_mapping(class_name):
-    global class_count_mapping
-
-    return class_count_mapping.update({class_name : 0})
-
-def update_class_count_mapping(class_name):
-    global class_count_mapping
-
-    return class_count_mapping.update({class_name : (class_count_mapping.get(class_name) + 1)})
-
-def get_class_count_mapping():
-    return class_count_mapping
-
-def set_field_count_mapping(class_name):
-    global field_count_mapping
-
-    return field_count_mapping.update({class_name : 0})
-
-def update_field_count_mapping(class_name):
-    global field_count_mapping
-
-    return field_count_mapping.update({class_name : (field_count_mapping.get(class_name) + 1)})
-
-def get_field_count_mapping():
-    return field_count_mapping
-
-def get_total_class_count_mapping(name):
-    good, review, retired = 0, 0, 0
-
-    for key, value in class_count_mapping.items():
-        if key.startswith(name + "_good"):
-            good = value
-        elif key.startswith(name + "_needs_review"):
-            review = value
-        elif key.startswith(name + "_retired"):
-            retired = value
-
-    return good, review, retired
-
-def get_total_field_count_mapping(name):
-    software, supported, location, managed_by_team, managed_by_group = 0, 0, 0, 0, 0
-
-    for key, value in field_count_mapping.items():
-        if key.startswith(name + "_software"):
-            software = value
-        elif key.startswith(name + "_supported"):
-            supported = value
-        elif key.startswith(name + "_location"):
-            location = value
-        elif key.startswith(name + "_managed_by_team"):
-            managed_by_team = value
-        elif key.startswith(name + "_managed_by_group"):
-            managed_by_group = value
-
-    print(software, supported, location, managed_by_team, managed_by_group)
-
-    return software, supported, location, managed_by_team, managed_by_group
-
-def set_computer_dataframe(new_dataframe, data):
-    global computer_dataframe
-
-    computer_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
-
-def get_computer_dataframe():
-    return computer_dataframe
-
-def set_window_dataframe(new_dataframe, data):
-    global window_dataframe
-
-    window_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
-
-def get_window_dataframe():
-    return window_dataframe
-
-def set_linux_dataframe(new_dataframe, data):
-    global linux_dataframe
-
-    linux_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
-
-def get_linux_dataframe():
-    return linux_dataframe
-
-def set_esx_dataframe(new_dataframe, data):
-    global esx_dataframe
-
-    esx_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
-
-def get_esx_dataframe():
-    return esx_dataframe
-
-def make_folder():
-    path = f"Reports/{now_date}"
-
-    if not os.path.isdir(path):
-        os.makedirs(path)
-
-    return path
-
 def get_data_equals(api, query_builder_field = "", query_builder_search = ""):
     global data
     global owners
@@ -151,6 +42,38 @@ def check_owners(api, query_builder_field):
             count += 1
 
     return data
+
+def set_computer_dataframe(new_dataframe, data):
+    global computer_dataframe
+
+    computer_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_computer_dataframe():
+    return computer_dataframe
+
+def set_window_dataframe(new_dataframe, data):
+    global window_dataframe
+
+    window_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_window_dataframe():
+    return window_dataframe
+
+def set_linux_dataframe(new_dataframe, data):
+    global linux_dataframe
+
+    linux_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_linux_dataframe():
+    return linux_dataframe
+
+def set_esx_dataframe(new_dataframe, data):
+    global esx_dataframe
+
+    esx_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_esx_dataframe():
+    return esx_dataframe
 
 #Subtract 2 dates
 def days_between(d1, d2):
@@ -268,50 +191,8 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
 
 async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number, thread_lock):
-    #Dict
-    data = dict()
-    software_full_list = dict()
-
-    #Create client object
-    client = pysnow.Client(instance=instance, user=username, password=password)
-
-    #Session Thread Safe
-    session_api = config.get('API', f"{api_table_name}")
-    session = client.resource(api_path=session_api)
-
-    session_software_api = config.get('API', "cmdb_sam_sw_install")
-    session_software = client.resource(api_path=session_software_api)
-
-    session_sys_user_api = config.get('API', "sys_user_group")
-    session_sys_user = client.resource(api_path=session_sys_user_api)
-
-    session_location_api = config.get('API', "cmn_location")
-    session_location = client.resource(api_path=session_location_api)
-
-    #Path Location
-    path = make_folder()
-
-    sleep(.2)
-
-    file_name = f"Reports/{now_date}/Full_Report_{now_date}_Report.xlsx"
-    wb = Workbook()
-    wb.save(file_name)
-
-    #Database
-    cnxn, cursor = DC.new_database_connection()
-
-    #Timer
-    start = time()
-
-    #Offset parameter from function arg to start record from api call
-    offset_parameter = entry_offset
-    limit_parameter = limit_count
-
-    #Query Builder
-    queryBuilder = pysnow.QueryBuilder().field('serial_number').is_not_empty()
-    
     #FUNCTIONS
-    def find_software_full():
+    def find_software_full(sys_class_name):
         software_count = 0
 
         session_software.parameters.exclude_reference_link = True
@@ -322,23 +203,29 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
         responses = session_software.get(query=query_builder)
 
         try:
-            if good_record():
+            if good_record() or bad_record():
                 for response in responses.all():
-                    if response is not None:
-                        if response['primary_key'] in software_full_list.keys():
-                            software_count += 1
-                            software_full_list.update({response['primary_key'] : software_full_list.get(response['primary_key']) + 1})
+                    if sys_class_name in software_mapping.keys():
+                        for index, key in enumerate(software_mapping[sys_class_name]):
+                            if response['primary_key'] in key:
+                                software_count += 1
+                                set_software_mapping(sys_class_name, response['primary_key'])
+                                update_software_mapping(sys_class_name, response['primary_key'], index)
+                                break
 
                         else:
                             software_count += 1
-                            software_full_list.update({response['primary_key'] : 1})
+                            set_software_mapping(sys_class_name, response['primary_key'])
+                    
+                    else:
+                        software_mapping.update({sys_class_name : []})
         
         except pysnow.exceptions.NoResults:
             print(f"NO RESULT ERROR FROM {data['computer_name']}")
-    
+
         return software_count
                 
-    
+
     def find_software(name, software_name = "", without_publisher=False):
             session_software.parameters.exclude_reference_link = True
 
@@ -384,12 +271,12 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
         return data['operational_status'] == "Operational" \
             and data['install_status'] == "Installed" \
             and int(data['total_days']) <= 15
-    
+
     def bad_record():
         return data['operational_status'] == "Operational" \
         and data['install_status'] == "Installed" \
         and int(data['total_days']) > 15
-    
+
     def retired_record():
         return data['operational_status'] == "Retired" \
         and data['install_status'] == "Retired" \
@@ -457,6 +344,47 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                 if search == "datadog_installed" and report_dataframe['server_name'].eq(data['computer_name']).sum() == 0:
                     write_file(f"{path}/SNOW_AND_DataDog_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']}\n")
 
+    #Dict
+    data = dict()
+
+    #Create client object
+    client = pysnow.Client(instance=instance, user=username, password=password)
+
+    #Session Thread Safe
+    session_api = config.get('API', f"{api_table_name}")
+    session = client.resource(api_path=session_api)
+
+    session_software_api = config.get('API', "cmdb_sam_sw_install")
+    session_software = client.resource(api_path=session_software_api)
+
+    session_sys_user_api = config.get('API', "sys_user_group")
+    session_sys_user = client.resource(api_path=session_sys_user_api)
+
+    session_location_api = config.get('API', "cmn_location")
+    session_location = client.resource(api_path=session_location_api)
+
+    #Path Location
+    path = make_folder()
+
+    sleep(.2)
+
+    file_name = f"Reports/{now_date}/Full_Report_{now_date}_Report.xlsx"
+    wb = Workbook()
+    wb.save(file_name)
+
+    #Database
+    cnxn, cursor = DC.new_database_connection()
+
+    #Timer
+    start = time()
+
+    #Offset parameter from function arg to start record from api call
+    offset_parameter = entry_offset
+    limit_parameter = limit_count
+
+    #Query Builder
+    queryBuilder = pysnow.QueryBuilder().field('serial_number').is_not_empty()
+    
     try:
         api_responses = session.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
 
@@ -486,13 +414,16 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                 data['managed_by'] = response['managed_by']
                 data['managed_by_group'] = "" if response['managed_by_group'] == "" else get_sys_owner(response['managed_by_group']['value'])
                 data['location'] = "" if response['location'] == "" else get_location(response['location']['value'])
-                data['software_count'] = find_software_full()
+                data['software_count'] = find_software_full(response['sys_class_name'])
                 data['microsoft_configuration_client_installed'] = 0
                 data['crowdstrike_installed'] = 0
                 data['tenable_installed'] = 0
                 data['datadog_installed'] = 0
                 data['mcafee_installed'] = 0
                 data['troubleshooting_tools_installed'] = 0
+                data['pingable'] = 0
+                data['forward_dns'] = 0
+                data['reverse_dns'] = 0
 
                 #CHECK SOFTWARE FOR WINDOWS
                 if response['sys_class_name'] in software_list_windows:
@@ -508,7 +439,13 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                     find_software("crowdstrike", "falcon-sensor", True)
                     find_software("tenable", "NessusAgent", True)
                     find_software("Datadog", "Agent")
-                    
+                
+                #CHECK NSLOOKUP
+                if(good_record() or bad_record() and len(data['ip_address']) > 7):
+                    data['forward_dns'] = get_nslookup_forward(data['computer_name'])
+                    data['reverse_dns'] = get_nslookup_reverse(data['ip_address'])
+                    data['pingable'] = 0 if check_ping(data['ip_address']) == False else 1
+
                 #DIFFERENT DATAFRAME FOR EXCEL BASED ON CLASS NAME
                 if response['sys_class_name'] == "cmdb_ci_computer":
                     if thread_lock.locked != True:
@@ -529,11 +466,11 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                         thread_lock.release()
 
                 elif response['sys_class_name'] == "cmdb_ci_esx_server":
-
                     if thread_lock.locked != True:
                         thread_lock.acquire()
                         set_esx_dataframe(esx_dataframe, data)
                         thread_lock.release()
+
                     
                 #REVISES COUNTS BASED ON GOOD/BAD/RETIRED RECORDS
                 if (response['sys_class_name'] + "_good") not in class_count_mapping.keys():
@@ -563,8 +500,6 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
 
                 # except Exception as e:
                 #     print(f"Failed to insert data for {response}", "\n", e)
-
-            write_file(f"{path}/Dictionary_{response['sys_class_name']}_{now_date}.txt", json.dumps(software_full_list, indent=4) + '\n')
             
         except Exception as e:
             print("Failed at loop response", "\n", e)

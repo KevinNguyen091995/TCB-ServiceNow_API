@@ -30,8 +30,6 @@ def get_api_thread():
         good, review, retired = get_total_class_count_mapping(api_name)
         software_installed, supported, location, managed_by, managed_by_group = get_total_field_count_mapping(api_name)
 
-        print(software_installed, supported, location, managed_by, managed_by_group)
-
         write_to_excel(sheet_name, dataframe.get(api_name))
         write_to_text(api_name, good, review, retired, software_installed, supported, location, managed_by, managed_by_group)
 
@@ -40,12 +38,15 @@ def get_api_thread():
     #['cmdb_ci_computer', 'cmdb_ci_win_server', 'cmdb_ci_linux_server', 'cmdb_ci_esx_server']
 
     for thread in range(total_threads):
-        thread_array.append(threading.Thread(target=callback_thread, args=(get_api_asset, "cmdb_ci_computer", (thread * 5), 5, thread+1, thread_lock)))
+        thread_array.append(threading.Thread(target=callback_thread, args=(get_api_asset, "cmdb_ci_computer", (thread * 3), 3, thread+1, thread_lock)))
         sleep(.1)
         thread_array[-1].start()
 
     for join_thread in thread_array:
         join_thread.join()
+
+    #Write Full software list
+    write_dictionary(get_software_mapping())
 
     #Workstations
     generate_report("Workstation", "cmdb_ci_computer")

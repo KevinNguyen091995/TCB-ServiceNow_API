@@ -38,7 +38,11 @@ Updates Needed for 05-12-2023
 Updates Needed for 05-24-2023
 	Add to Retire to Retire Ping
 	Nslookup between host_name <> ip_address
+	Location Discrep
+	Cloud Assets
 	Check Audit History and check present date vs last audit date by Jason Harmon
+	
+	
 	
 		
 	
