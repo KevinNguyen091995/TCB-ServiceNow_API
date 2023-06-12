@@ -1,9 +1,7 @@
 from Key_Functions_Modules import *
 import pysnow
 
-
 #Initial Global Data for Vulnerability Scans
-data = dict()
 software = dict()
 owners = []
 vul_entry_dict = dict()
@@ -26,6 +24,9 @@ key = config.get('DEFAULT', 'key')
 
 #Datakey
 data_key = Fernet(key)
+
+#Path
+path = f"Reports/{now_date}"
 
 #DateTime
 now_date = datetime.now().strftime("%Y-%m-%d")
@@ -50,6 +51,7 @@ cmdb_ci_unix_server_api = config.get("API", 'cmdb_ci_unix_server')
 cmdb_ci_esx_server_api = config.get("API", 'cmdb_ci_esx_server')
 cmdb_sam_sw_install_api = config.get("API", "cmdb_sam_sw_install")
 cmn_location_api = config.get("API", "cmn_location")
+cmdb_ci_vm_instance_api = config.get("API", "cmdb_ci_vm_instance")
 
 # Define a resource, here we'll use the incident table API
 sys_user = c.resource(api_path=sys_user_api)
@@ -68,15 +70,4 @@ cmdb_ci_unix_server = c.resource(api_path=cmdb_ci_unix_server_api)
 cmdb_ci_esx_server = c.resource(api_path=cmdb_ci_esx_server_api)
 cmdb_sam_sw_install = c.resource(api_path=cmdb_sam_sw_install_api)
 cmn_location = c.resource(api_path=cmn_location_api)
-
-#Mapping
-operational_status_mapping = {
-    '1' : 'Operational',
-    '2' : 'Non-Operational',
-    '6' : 'Retired'
-}
-
-install_status_mapping = {
-    '1' : 'Installed',
-    '7' : 'Retired'
-}
+cmdb_ci_vm_instance = c.resource(api_path=cmdb_ci_vm_instance_api)

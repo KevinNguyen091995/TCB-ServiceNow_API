@@ -5,10 +5,11 @@ from UliPlot.XLSX import auto_adjust_xlsx_column_width
 from time import time, sleep
 from openpyxl import Workbook, load_workbook
 from collections import OrderedDict
+import Database.DB_Connection as DC
+import pandas as pd
 import subprocess
 import socket
 import configparser
-import pandas as pd
 import asyncio
 import csv
 import threading
@@ -41,16 +42,33 @@ computer_dataframe = pd.DataFrame()
 window_dataframe = pd.DataFrame()
 linux_dataframe = pd.DataFrame()
 esx_dataframe = pd.DataFrame()
+cloud_dataframe= pd.DataFrame()
+vmware_dataframe = pd.DataFrame()
 class_count_mapping = dict()
 field_count_mapping = dict()
 total_count_mapping = dict()
+
+#Mapping
+operational_status_mapping = {
+    '1' : 'Operational',
+    '2' : 'Non-Operational',
+    '6' : 'Retired'
+}
+
+install_status_mapping = {
+    '1' : 'Installed',
+    '7' : 'Retired'
+}
 software_mapping = dict({
     "cmdb_ci_computer" : [],
     "cmdb_ci_win_server" : [],
+    "cmdb_ci_linux_server" : [],
+    "cmdb_ci_esx_server" : [],
 })
 
 #Initial Arrays API List
 excel_list = ['cmdb_ci_computer', 'cmdb_ci_win_server', 'cmdb_ci_linux_server', 'cmdb_ci_esx_server']
+compare_list = ["cmdb_ci_linux_server", "cmdb_ci_win_server"]
 software_list_linux = ['cmdb_ci_linux_server', 'cmdb_ci_unix_server', 'cmdb_ci_esx_server']
 software_list_windows = ['cmdb_ci_win_server', 'cmdb_ci_computer']
 
@@ -97,9 +115,11 @@ def write_to_excel(api_table_name, dataframe):
         .apply(apply_background_color, axis=1)\
         .to_excel(writer, sheet_name=api_table_name, index=False)
         
-def check_ping(hostname):
+def check_ping(ip_address):
+    command = f"ping -n 1 {ip_address}"
+
     try:
-        subprocess.check_output(['ping', hostname])
+        subprocess.check_output(command, shell=True)
         return True
     
     except subprocess.CalledProcessError as error:
@@ -110,7 +130,7 @@ def get_nslookup_forward(hostname):
         socket.gethostbyname(hostname)
         return 1
     
-    except (socket.herror, socket.gaierror):
+    except (socket.herror, socket.gaierror) as error:
         return 0
     
 def get_nslookup_reverse(ip_address):
@@ -118,7 +138,7 @@ def get_nslookup_reverse(ip_address):
         socket.gethostbyaddr(ip_address)
         return 1
     
-    except (socket.herror, socket.gaierror):
+    except (socket.herror, socket.gaierror) as error:
         return 0
 
 def write_to_text(api_name, good_count, review_count, bad_count, software_installed, supported, location, managed_by, managed_by_group):
@@ -134,31 +154,36 @@ def write_to_text(api_name, good_count, review_count, bad_count, software_instal
 
     template = f"""{api_name}
 
-    Records in CMDB Discovery
+	Records in CMDB Discovery
     	{total_count - review_count}/{total_count} - Total High Confidence
-        	{good_count}/{total_count} - ({divide(good_count, total_count) * 100}%) Count of high confidence asset ci_record "operational" per MID server age of total days "<15 days" and operational status = "Operational" and install status "Installed"
-            {bad_count}/{total_count} - ({divide(bad_count, total_count) * 100}%)- Count of high confidence asset ci_record "retired" per MID server age of total days">16 days" operational status = "Retired" and install status "Retired"
+        	{good_count}/{total_count} - ({divide(good_count, total_count) * 100}%) - Operational
+            {bad_count}/{total_count} - ({divide(bad_count, total_count) * 100}%)- Retired
 
         {review_count}/{total_count} - Total Low Confidence
-        	{review_count}/{total_count} - ({divide(review_count, total_count) * 100}%) - Count of low confidence asset ci_record "retired" per MID server age of total days">16 days" operational status = "Operational"
+        	{review_count}/{total_count} - ({divide(review_count, total_count) * 100}%) - Untrusted Operational
 
     High Confidence CI_Records Completeness	
-		{software_installed}/{total_count} - ({divide(software_installed, total_count) * 100}%) - Count of high confidence asset ci_record "operational" with "Software" field populated.
-		{supported}/{total_count} - ({divide(supported, total_count) * 100}%) - Count of high confidence asset ci_record "operational" with "Supported by" field populated.
-		{location}/{total_count} - ({divide(location, total_count) * 100}%) - Count of high confidence asset ci_record "operational" with "Location" field populated.
-		{managed_by}/{total_count} - ({divide(managed_by, total_count) * 100}%) - Count of high confidence asset ci_record "operational" with "Managed by" field populated.
-		{managed_by_group}/{total_count} - ({divide(managed_by_group, total_count) * 100}%) - Count of high confidence asset ci_record "operational" with "Managed by group" field populated.\n
-    """
+		{software_installed}/{good_count} - ({divide(software_installed, good_count) * 100}%) - Software
+		{supported}/{good_count} - ({divide(supported, good_count) * 100}%) - Supported By
+		{location}/{good_count} - ({divide(location, good_count) * 100}%) - Location
+		{managed_by}/{good_count} - ({divide(managed_by, good_count) * 100}%) - Managed By
+		{managed_by_group}/{good_count} - ({divide(managed_by_group, good_count) * 100}%) - Managed By Group\n"""
 
     with open(f'{file_name}.txt', 'a+') as f:
         f.write(template)
 
 def write_dictionary(data):
-    file_name = f"Reports/{now_date}/Full_Software_{now_date}_Report.txt"
+    for key, values in data.items():
+        file_name = f"Reports/{now_date}/Software_{key}_{now_date}_Report"
 
-    with open(f'{file_name}.txt', 'a+') as f:
-        f.write(json.dumps(data, indent=4))
-
+        with open(f'{file_name}.txt', 'a+') as f:
+            f.write(json.dumps(values, indent=4)\
+                    .replace("{", "")\
+                    .replace("}", "")
+                    .replace("        ", "")\
+                    .replace("\n", "")\
+                    .replace("    ,", "\n")\
+            )
 
 def set_class_count_mapping(class_name):
     global class_count_mapping
@@ -229,10 +254,27 @@ def update_software_mapping(class_name, software_primary_key, index):
 def get_software_mapping():
     return software_mapping
 
+def write_to_sql(api_name, good, review, retired, software_installed, location, managed_by_group):
+    cnxn, cursor = DC.new_database_connection()
+
+    try:
+        query_insert = "INSERT INTO snow_asset_count VALUES(?,?,?,?,?,?,?,?)"
+        parameter = api_name, good, review, retired, software_installed, location, managed_by_group, now_date
+
+        cursor.execute(query_insert, parameter)
+        cnxn.commit()
+
+    except Exception as e:
+        print(f"Failed to insert data to SQL", "\n", e)
+
 def make_folder():
     path = f"Reports/{now_date}"
 
     if not os.path.isdir(path):
         os.makedirs(path)
 
-    return path
+def create_workbook():
+    #Create Workbook
+    file_name = f"Reports/{now_date}/Full_Report_{now_date}_Report.xlsx"
+    wb = Workbook()
+    wb.save(file_name)

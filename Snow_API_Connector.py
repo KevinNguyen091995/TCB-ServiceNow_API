@@ -1,4 +1,4 @@
-import Database.DB_Connection as DC
+
 from Snow_API_Initial_Data import *
 
 def get_data_equals(api, query_builder_field = "", query_builder_search = ""):
@@ -74,6 +74,69 @@ def set_esx_dataframe(new_dataframe, data):
 
 def get_esx_dataframe():
     return esx_dataframe
+
+def set_cloud_dataframe(new_dataframe, data):
+    global cloud_dataframe
+
+    cloud_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_cloud_dataframe():
+    return cloud_dataframe
+
+def set_vmware_dataframe(new_dataframe, data):
+    global vmware_dataframe
+
+    vmware_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_vmware_dataframe():
+    return vmware_dataframe
+
+def set_data_initial(response, api_table_name):
+    data = dict()
+    global operational_status_mapping
+    global install_status_mapping
+
+    data['computer_name'] = response['name']
+    data['ip_address'] = response['ip_address']
+    data['operational_status'] = operational_status_mapping.get(response['operational_status'])
+    data['install_status'] = install_status_mapping.get(response['install_status'])
+    data['mac_address'] = response['mac_address'].strip().replace(":","-")
+    data['sys_id'] = response['sys_id']
+    data['created_date'] = now_date
+    data['api_table'] = api_table_name
+    data['serial_number'] = response['serial_number']
+    data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
+    data['supported_by'] = response['supported_by']
+    data['managed_by'] = response['managed_by']
+    data['first_discovered'] = now_date if response['first_discovered'] == "" else response['first_discovered'].strip().split(" ")[0]
+    data['last_discovered'] = data['first_discovered'] if response['last_discovered'] == "" else response['last_discovered'].strip().split(" ")[0]
+    data['discovery_source'] = response['discovery_source']
+    data['total_days'] = days_between(now_date, data['last_discovered'])
+    data['microsoft_configuration_client_installed'] = 0
+    data['crowdstrike_installed'] = 0
+    data['tenable_installed'] = 0
+    data['datadog_installed'] = 0
+    data['mcafee_installed'] = 0
+    data['troubleshooting_tools_installed'] = 0
+    # data['pingable'] = 0
+    # data['forward_dns'] = 0
+    # data['reverse_dns'] = 0
+
+    if response['sys_class_name'] == "cmdb_ci_vm_instance" or response['sys_class_name'] == "cmdb_ci_vmware_instance":
+        data['vm_inst_id'] = response['vm_inst_id']
+        data['object_id'] = response['object_id']
+        data['state'] = response['state']
+
+    else:
+        encrypt_computer_name = encrypt_data(response['name'].replace("formerly: ", "").lower().encode())
+        encrypt_default_gateway = encrypt_data(response['default_gateway'].lower().encode())
+        encrypt_ip = encrypt_data(response['ip_address'].lower().encode())
+        data['default_gateway'] = response['default_gateway']
+        data['server_operating_system'] = response['os']
+
+    return data
+
+
 
 #Subtract 2 dates
 def days_between(d1, d2):
@@ -305,7 +368,7 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
             return update_class_count_mapping(response['sys_class_name'] + "_retired")
         
     def field_mapping_record_review():
-        if good_record() or retired_record():
+        if good_record():
             if data['software_count'] > 0:
                 update_field_count_mapping(response['sys_class_name'] + "_software")
             
@@ -363,18 +426,6 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
     session_location_api = config.get('API', "cmn_location")
     session_location = client.resource(api_path=session_location_api)
 
-    #Path Location
-    path = make_folder()
-
-    sleep(.2)
-
-    file_name = f"Reports/{now_date}/Full_Report_{now_date}_Report.xlsx"
-    wb = Workbook()
-    wb.save(file_name)
-
-    #Database
-    cnxn, cursor = DC.new_database_connection()
-
     #Timer
     start = time()
 
@@ -383,47 +434,22 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
     limit_parameter = limit_count
 
     #Query Builder
-    queryBuilder = pysnow.QueryBuilder().field('serial_number').is_not_empty()
+    queryBuilder = pysnow.QueryBuilder().field('serial_number').is_not_empty().AND().field("name").not_contains("AVD")
     
     try:
-        api_responses = session.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
+        if api_table_name in software_list_linux\
+        or api_table_name in software_list_windows:
+            api_responses = session.get(query=queryBuilder, offset = offset_parameter, limit = limit_parameter)
+            
+        else:
+            api_responses = session.get(offset = offset_parameter, limit = limit_parameter)
 
         try:
             for response in api_responses.all():
-                encrypt_computer_name = encrypt_data(response['name'].replace("formerly: ", "").lower().encode())
-                encrypt_default_gateway = encrypt_data(response['default_gateway'].lower().encode())
-                encrypt_ip = encrypt_data(response['ip_address'].lower().encode())
-
-                data['computer_name'] = response['name']
-                data['ip_address'] = response['ip_address']
-                data['default_gateway'] = response['default_gateway']
-                data['operational_status'] = operational_status_mapping.get(response['operational_status'])
-                data['install_status'] = install_status_mapping.get(response['install_status'])
-                data['server_operating_system'] = response['os']
-                data['server_model_id'] = "" if response['model_id'] == "" else response['model_id']['value']
-                data['mac_address'] = response['mac_address'].strip().replace(":","-")
-                data['sys_id'] = response['sys_id']
-                data['created_date'] = now_date
-                data['api_table'] = api_table_name
-                data['first_discovered'] = now_date if response['first_discovered'] == "" else response['first_discovered'].strip().split(" ")[0]
-                data['last_discovered'] = data['first_discovered'] if response['last_discovered'] == "" else response['last_discovered'].strip().split(" ")[0]
-                data['discovery_source'] = response['discovery_source']
-                data['total_days'] = days_between(now_date, data['last_discovered'])
-                data['serial_number'] = response['serial_number']
-                data['supported_by'] = response['supported_by']
-                data['managed_by'] = response['managed_by']
+                data = set_data_initial(response, api_table_name)
+                data['software_count'] = find_software_full(response['sys_class_name'])
                 data['managed_by_group'] = "" if response['managed_by_group'] == "" else get_sys_owner(response['managed_by_group']['value'])
                 data['location'] = "" if response['location'] == "" else get_location(response['location']['value'])
-                data['software_count'] = find_software_full(response['sys_class_name'])
-                data['microsoft_configuration_client_installed'] = 0
-                data['crowdstrike_installed'] = 0
-                data['tenable_installed'] = 0
-                data['datadog_installed'] = 0
-                data['mcafee_installed'] = 0
-                data['troubleshooting_tools_installed'] = 0
-                data['pingable'] = 0
-                data['forward_dns'] = 0
-                data['reverse_dns'] = 0
 
                 #CHECK SOFTWARE FOR WINDOWS
                 if response['sys_class_name'] in software_list_windows:
@@ -441,10 +467,10 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                     find_software("Datadog", "Agent")
                 
                 #CHECK NSLOOKUP
-                if(good_record() or bad_record() and len(data['ip_address']) > 7):
-                    data['forward_dns'] = get_nslookup_forward(data['computer_name'])
-                    data['reverse_dns'] = get_nslookup_reverse(data['ip_address'])
-                    data['pingable'] = 0 if check_ping(data['ip_address']) == False else 1
+                # if(len(data['ip_address']) > 6 and ( good_record() or bad_record() )):
+                #     data['forward_dns'] = get_nslookup_forward(data['computer_name'])
+                #     data['reverse_dns'] = get_nslookup_reverse(data['ip_address'])
+                #     data['pingable'] = 0 if check_ping(data['ip_address']) == False else 1
 
                 #DIFFERENT DATAFRAME FOR EXCEL BASED ON CLASS NAME
                 if response['sys_class_name'] == "cmdb_ci_computer":
@@ -471,6 +497,17 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                         set_esx_dataframe(esx_dataframe, data)
                         thread_lock.release()
 
+                elif response['sys_class_name'] == 'cmdb_ci_vm_instance':
+                    if thread_lock.locked != True:
+                        thread_lock.acquire()
+                        set_cloud_dataframe(cloud_dataframe, data)
+                        thread_lock.release()
+
+                elif response['sys_class_name'] == 'cmdb_ci_vmware_instance':
+                    if thread_lock.locked != True:
+                        thread_lock.acquire()
+                        set_vmware_dataframe(vmware_dataframe, data)
+                        thread_lock.release()
                     
                 #REVISES COUNTS BASED ON GOOD/BAD/RETIRED RECORDS
                 if (response['sys_class_name'] + "_good") not in class_count_mapping.keys():
@@ -488,10 +525,16 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                     field_mapping_record_review()
 
                 #COMPARES Crowdstrike and DataDog reports for more accurate measures
-                compare_data(data, "Crowdstrike_Reports/5649_hosts_2023-06-01T16_22_53Z.csv", "crowdstrike_installed")
-                compare_data(data, "Datadog_Reports/2023-06-01_DataDog.csv", "datadog_installed")
+                if data['serial_number'] != ""\
+                    and data['serial_number'] is not None\
+                    and response['sys_class_name'] in compare_list:
+                    compare_data(data, "Crowdstrike_Reports/5649_hosts_2023-06-01T16_22_53Z.csv", "crowdstrike_installed")
+                    compare_data(data, "Datadog_Reports/2023-06-01_DataDog.csv", "datadog_installed")
 
                 # try:
+                #     #Database
+                #     cnxn, cursor = DC.new_database_connection()
+
                 #     query_insert = "INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
                 #     parameter = data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'], data['server_model_id'], data['mac_address'], data['sys_id'], data['created_date'], data['api_table'], data['first_discovered'], data['last_discovered'], data['discovery_source'], data['total_days'], data['serial_number']
 
@@ -508,4 +551,4 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
         print("Failed to receive a 200 HTTP Request", "\n", e)
 
     end = time()
-    print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
+    print(f"{api_table_name} : Thread {thread_number} completed in : {int(end - start)} seconds")

@@ -14,7 +14,7 @@ def get_count_vulnerability_thread_call():
     for join_thread in thread_array:
         join_thread.join()
 
-def get_api_thread():
+def get_api_server_thread(limit):
     total_threads = 16
     thread_array = []
     thread_lock = threading.Lock()
@@ -32,13 +32,14 @@ def get_api_thread():
 
         write_to_excel(sheet_name, dataframe.get(api_name))
         write_to_text(api_name, good, review, retired, software_installed, supported, location, managed_by, managed_by_group)
+        # write_to_sql(api_name, good, review, retired, software_installed, location, managed_by_group)
 
 
     #Names of APIs currently used
     #['cmdb_ci_computer', 'cmdb_ci_win_server', 'cmdb_ci_linux_server', 'cmdb_ci_esx_server']
 
     for thread in range(total_threads):
-        thread_array.append(threading.Thread(target=callback_thread, args=(get_api_asset, "cmdb_ci_computer", (thread * 3), 3, thread+1, thread_lock)))
+        thread_array.append(threading.Thread(target=callback_thread, args=(get_api_asset, "cmdb_ci_computer", (thread * limit), limit, thread+1, thread_lock)))
         sleep(.1)
         thread_array[-1].start()
 
@@ -59,3 +60,35 @@ def get_api_thread():
 
     #ESX Server
     generate_report("ESX Server", "cmdb_ci_esx_server")
+
+def get_api_vm_thread(limit):
+    total_threads = 16
+    thread_array = []
+    thread_lock = threading.Lock()
+
+    def generate_report(sheet_name, api_name):
+        dataframe = {
+            "cmdb_ci_vm_instance" : get_cloud_dataframe(),
+            "cmdb_ci_vmware_instance" : get_vmware_dataframe()
+        }
+
+        good, review, retired = get_total_class_count_mapping(api_name)
+        software_installed, supported, location, managed_by, managed_by_group = get_total_field_count_mapping(api_name)
+
+        write_to_excel(sheet_name, dataframe.get(api_name))
+        write_to_text(api_name, good, review, retired, software_installed, supported, location, managed_by, managed_by_group)
+        # write_to_sql(api_name, good, review, retired, software_installed, location, managed_by_group)
+
+    for thread in range(total_threads):
+        thread_array.append(threading.Thread(target=callback_thread, args=(get_api_asset, "cmdb_ci_vm_instance", (thread * limit), limit, thread+1, thread_lock)))
+        sleep(.1)
+        thread_array[-1].start()
+
+    for join_thread in thread_array:
+        join_thread.join()
+        
+    #Cloud Instances
+    generate_report("Cloud Instances", "cmdb_ci_vm_instance")
+
+    #VMWare Instances
+    generate_report("VMWare", "cmdb_ci_vmware_instance")
