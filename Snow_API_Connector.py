@@ -1,47 +1,4 @@
-
 from Snow_API_Initial_Data import *
-
-def get_data_equals(api, query_builder_field = "", query_builder_search = ""):
-    global data
-    global owners
-
-    responses = api.get(query= {query_builder_field: query_builder_search})
-
-    if api == sys_user_group:
-        for sys_user_group_data in responses.all():
-            owners = []
-            try:
-                owners.append(sys_user_group_data['u_l3_leader']['link'].split("/")[-1])
-            except:
-                pass
-
-            try:
-                owners.append(sys_user_group_data['u_l4_leader']['link'].split("/")[-1])
-            except:
-                pass
-
-    if api == vulnerability_entry:
-        for vul_entry_data in responses.all():
-            data['ten_vul_name'] = vul_entry_data["name"]
-            data["ten_solution"] = vul_entry_data['solution']
-            data['ten_id_name'] = vul_entry_data['id']
-            data['date_published'] = vul_entry_data['date_published']
-
-    return data, software, owners
-
-def check_owners(api, query_builder_field):
-    get_data_equals(sys_user_group, "sys_id", data['assignment_group'])
-    count = 1
-
-    for owner in owners:
-        responses = api.get(query = {query_builder_field: owner})
-
-        for user_data in responses.all():
-            data[f"owner_{count}_name"] = user_data['name']
-            data[f'owner_{count}_email'] = user_data['email']
-            count += 1
-
-    return data
 
 def set_computer_dataframe(new_dataframe, data):
     global computer_dataframe
@@ -90,6 +47,48 @@ def set_vmware_dataframe(new_dataframe, data):
 
 def get_vmware_dataframe():
     return vmware_dataframe
+
+def get_data_equals(api, query_builder_field = "", query_builder_search = ""):
+    global data
+    global owners
+
+    responses = api.get(query= {query_builder_field: query_builder_search})
+
+    if api == sys_user_group:
+        for sys_user_group_data in responses.all():
+            owners = []
+            try:
+                owners.append(sys_user_group_data['u_l3_leader']['link'].split("/")[-1])
+            except:
+                pass
+
+            try:
+                owners.append(sys_user_group_data['u_l4_leader']['link'].split("/")[-1])
+            except:
+                pass
+
+    if api == vulnerability_entry:
+        for vul_entry_data in responses.all():
+            data['ten_vul_name'] = vul_entry_data["name"]
+            data["ten_solution"] = vul_entry_data['solution']
+            data['ten_id_name'] = vul_entry_data['id']
+            data['date_published'] = vul_entry_data['date_published']
+
+    return data, software, owners
+
+def check_owners(api, query_builder_field):
+    get_data_equals(sys_user_group, "sys_id", data['assignment_group'])
+    count = 1
+
+    for owner in owners:
+        responses = api.get(query = {query_builder_field: owner})
+
+        for user_data in responses.all():
+            data[f"owner_{count}_name"] = user_data['name']
+            data[f'owner_{count}_email'] = user_data['email']
+            count += 1
+
+    return data
 
 def set_data_initial(response, api_table_name):
     data = dict()
@@ -268,20 +267,26 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
         try:
             if good_record() or bad_record():
                 for response in responses.all():
-                    if sys_class_name in software_mapping.keys():
+                    if sys_class_name in software_mapping.keys() and thread_lock.locked != True:
                         for index, key in enumerate(software_mapping[sys_class_name]):
                             if response['primary_key'] in key:
+                                thread_lock.acquire()
                                 software_count += 1
-                                set_software_mapping(sys_class_name, response['primary_key'])
                                 update_software_mapping(sys_class_name, response['primary_key'], index)
+                                thread_lock.release()
                                 break
 
                         else:
+                            thread_lock.acquire()
                             software_count += 1
                             set_software_mapping(sys_class_name, response['primary_key'])
-                    
-                    else:
+                            thread_lock.release()
+
+                    elif sys_class_name not in software_mapping.keys() and thread_lock.locked != True:
+                        thread_lock.acquire()
                         software_mapping.update({sys_class_name : []})
+                        thread_lock.release()
+                    
         
         except pysnow.exceptions.NoResults:
             print(f"NO RESULT ERROR FROM {data['computer_name']}")
@@ -528,21 +533,8 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                 if data['serial_number'] != ""\
                     and data['serial_number'] is not None\
                     and response['sys_class_name'] in compare_list:
-                    compare_data(data, "Crowdstrike_Reports/5649_hosts_2023-06-01T16_22_53Z.csv", "crowdstrike_installed")
-                    compare_data(data, "Datadog_Reports/2023-06-01_DataDog.csv", "datadog_installed")
-
-                # try:
-                #     #Database
-                #     cnxn, cursor = DC.new_database_connection()
-
-                #     query_insert = "INSERT INTO snow_cmdb_list VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-                #     parameter = data['computer_name'], data['ip_address'], data['default_gateway'], data['operational_status'], data['server_operating_system'], data['server_model_id'], data['mac_address'], data['sys_id'], data['created_date'], data['api_table'], data['first_discovered'], data['last_discovered'], data['discovery_source'], data['total_days'], data['serial_number']
-
-                #     cursor.execute(query_insert, parameter)
-                #     cnxn.commit()
-
-                # except Exception as e:
-                #     print(f"Failed to insert data for {response}", "\n", e)
+                    compare_data(data, "Crowdstrike_Reports/5393_hosts_2023-06-13T15_20_21Z.csv", "crowdstrike_installed")
+                    compare_data(data, "Datadog_Reports/2023-06-13_DataDog.csv", "datadog_installed")
             
         except Exception as e:
             print("Failed at loop response", "\n", e)

@@ -141,10 +141,27 @@ def get_nslookup_reverse(ip_address):
     except (socket.herror, socket.gaierror) as error:
         return 0
 
-def write_to_text(api_name, good_count, review_count, bad_count, software_installed, supported, location, managed_by, managed_by_group):
+def write_to_text_legend():
+    file_name = f"Reports/{now_date}/Full_Counts_{now_date}_Report"
+    template = """Definitions
+	High confidence:
+
+	Operational = per MID server age of total days  < 15 days" and operational status = "Operational" and install status "Installed"
+	Retired = per MID server age of total days > 16 days" operational status = "Retired" and install status "Retired"
+
+	Low confidence:
+
+	Untrusted Operational = per MID server age of total days > 16 days" operational status = "Operational"""
+    
+    with open(f'{file_name}.txt', 'a+') as f:
+    	f.write(template)
+    
+
+
+def write_to_text_info(api_name, good_count, review_count, bad_count, software_installed, supported, location, managed_by, managed_by_group):
     total_count = good_count + bad_count + review_count
 
-    file_name = f"Reports/{now_date}/Full_Counts_{now_date}_Report.txt"
+    file_name = f"Reports/{now_date}/Full_Counts_{now_date}_Report"
 
     def divide(x,y):
         try:
@@ -155,12 +172,12 @@ def write_to_text(api_name, good_count, review_count, bad_count, software_instal
     template = f"""{api_name}
 
 	Records in CMDB Discovery
-    	{total_count - review_count}/{total_count} - Total High Confidence
-        	{good_count}/{total_count} - ({divide(good_count, total_count) * 100}%) - Operational
-            {bad_count}/{total_count} - ({divide(bad_count, total_count) * 100}%)- Retired
+		{total_count - review_count}/{total_count} - Total High Confidence
+			{good_count}/{total_count} - ({divide(good_count, total_count) * 100}%) - Operational
+			{bad_count}/{total_count} - ({divide(bad_count, total_count) * 100}%)- Retired
 
-        {review_count}/{total_count} - Total Low Confidence
-        	{review_count}/{total_count} - ({divide(review_count, total_count) * 100}%) - Untrusted Operational
+		{review_count}/{total_count} - Total Low Confidence
+			{review_count}/{total_count} - ({divide(review_count, total_count) * 100}%) - Untrusted Operational
 
     High Confidence CI_Records Completeness	
 		{software_installed}/{good_count} - ({divide(software_installed, good_count) * 100}%) - Software

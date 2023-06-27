@@ -31,8 +31,8 @@ def get_api_server_thread(limit):
         software_installed, supported, location, managed_by, managed_by_group = get_total_field_count_mapping(api_name)
 
         write_to_excel(sheet_name, dataframe.get(api_name))
-        write_to_text(api_name, good, review, retired, software_installed, supported, location, managed_by, managed_by_group)
-        # write_to_sql(api_name, good, review, retired, software_installed, location, managed_by_group)
+        write_to_text_info(api_name, good, review, retired, software_installed, supported, location, managed_by, managed_by_group)
+        write_to_sql(api_name, good, review, retired, software_installed, location, managed_by_group)
 
 
     #Names of APIs currently used
@@ -76,8 +76,8 @@ def get_api_vm_thread(limit):
         software_installed, supported, location, managed_by, managed_by_group = get_total_field_count_mapping(api_name)
 
         write_to_excel(sheet_name, dataframe.get(api_name))
-        write_to_text(api_name, good, review, retired, software_installed, supported, location, managed_by, managed_by_group)
-        # write_to_sql(api_name, good, review, retired, software_installed, location, managed_by_group)
+        write_to_text_info(api_name, good, review, retired, software_installed, supported, location, managed_by, managed_by_group)
+        write_to_sql(api_name, good, review, retired, software_installed, location, managed_by_group)
 
     for thread in range(total_threads):
         thread_array.append(threading.Thread(target=callback_thread, args=(get_api_asset, "cmdb_ci_vm_instance", (thread * limit), limit, thread+1, thread_lock)))
@@ -86,6 +86,9 @@ def get_api_vm_thread(limit):
 
     for join_thread in thread_array:
         join_thread.join()
+
+    #Write Legend
+    write_to_text_legend()
         
     #Cloud Instances
     generate_report("Cloud Instances", "cmdb_ci_vm_instance")
