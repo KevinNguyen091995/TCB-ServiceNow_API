@@ -16,6 +16,7 @@ import threading
 import os
 import json
 import math
+import pysnow
 
 #ConfigParser Setup
 config = configparser.ConfigParser()
@@ -44,6 +45,13 @@ linux_dataframe = pd.DataFrame()
 esx_dataframe = pd.DataFrame()
 cloud_dataframe= pd.DataFrame()
 vmware_dataframe = pd.DataFrame()
+cisco_firewall_dataframe = pd.DataFrame()
+palo_firewall_dataframe = pd.DataFrame()
+ip_firewall_dataframe = pd.DataFrame()
+ip_router_dataframe = pd.DataFrame()
+ip_switch_dataframe = pd.DataFrame()
+netgear_dataframe = pd.DataFrame()
+wireless_ap_dataframe = pd.DataFrame()
 class_count_mapping = dict()
 field_count_mapping = dict()
 total_count_mapping = dict()
@@ -68,9 +76,214 @@ software_mapping = dict({
 
 #Initial Arrays API List
 excel_list = ['cmdb_ci_computer', 'cmdb_ci_win_server', 'cmdb_ci_linux_server', 'cmdb_ci_esx_server']
-compare_list = ["cmdb_ci_linux_server", "cmdb_ci_win_server"]
+compare_list = ["cmdb_ci_linux_server", "cmdb_ci_win_server", 'cmdb_ci_vm_instance', 'cmdb_ci_vmware_instance', 'cmdb_ci_computer']
 software_list_linux = ['cmdb_ci_linux_server', 'cmdb_ci_unix_server', 'cmdb_ci_esx_server']
 software_list_windows = ['cmdb_ci_win_server', 'cmdb_ci_computer']
+
+#Initial Global Data for Vulnerability Scans
+software = dict()
+owners = []
+vul_entry_dict = dict()
+vul_active_count = dict()
+vul_inactive_count = dict()
+
+#ConfigParser Setup
+config = configparser.ConfigParser()
+config.read('C:/Users/kenguy/OneDrive - Texas Capital Bank/Desktop/Python/Config_Properties/config_file.txt')
+
+#DEFAULT
+username = config.get('DEFAULT', 'username')
+password = config.get('DEFAULT', 'password')
+instance_dev = config.get('DEFAULT', 'instance_dev')
+instance_test = config.get('DEFAULT', 'instance_test')
+instance = config.get('DEFAULT', 'instance')
+
+#Key
+key = config.get('DEFAULT', 'key')
+
+#Datakey
+data_key = Fernet(key)
+
+#Path
+path = f"Reports/{now_date}"
+
+#DateTime
+now_date = datetime.now().strftime("%Y-%m-%d")
+
+#Create client object
+c = pysnow.Client(instance=instance, user=username, password=password)
+
+#API Setup
+sys_user_api = config.get('API', 'sys_user')
+incident_api = config.get('API', 'incident')
+software_api = config.get('API', 'software_install')
+vulnerability_ci_api = config.get('API', 'vulnerability_ci')
+vulnerability_item_api = config.get('API', 'vulnerability_item') 
+vulnerability_entry_api = config.get('API', 'vulnerability_entry')
+sys_object_api = config.get('API', 'sys_object')
+sys_user_group_api = config.get('API', 'sys_user_group')
+cmdb_ci_computer_api = config.get('API', 'cmdb_ci_computer')
+cmdb_ci_server_api = config.get("API", 'cmdb_ci_server')
+cmdb_ci_win_server_api = config.get("API", 'cmdb_ci_win_server')
+cmdb_ci_linux_server_api = config.get("API", 'cmdb_ci_linux_server')
+cmdb_ci_unix_server_api = config.get("API", 'cmdb_ci_unix_server')
+cmdb_ci_esx_server_api = config.get("API", 'cmdb_ci_esx_server')
+cmdb_sam_sw_install_api = config.get("API", "cmdb_sam_sw_install")
+cmn_location_api = config.get("API", "cmn_location")
+cmdb_ci_vm_instance_api = config.get("API", "cmdb_ci_vm_instance")
+cmdb_ci_netgear_api = config.get("API", "cmdb_ci_netgear")
+
+# Define a resource, here we'll use the incident table API
+sys_user = c.resource(api_path=sys_user_api)
+incident = c.resource(api_path=incident_api)
+software_install = c.resource(api_path=software_api)
+vulnerability_ci = c.resource(api_path=vulnerability_ci_api)
+sys_object = c.resource(api_path=sys_object_api)
+vulnerability_item = c.resource(api_path=vulnerability_item_api)
+vulnerability_entry = c.resource(api_path=vulnerability_entry_api)
+sys_user_group = c.resource(api_path=sys_user_group_api)
+cmdb_ci_computer = c.resource(api_path=cmdb_ci_computer_api)
+cmdb_ci_server_list = c.resource(api_path=cmdb_ci_server_api)
+cmdb_ci_win_server = c.resource(api_path=cmdb_ci_win_server_api)
+cmdb_ci_linux_server = c.resource(api_path=cmdb_ci_linux_server_api)
+cmdb_ci_unix_server = c.resource(api_path=cmdb_ci_unix_server_api)
+cmdb_ci_esx_server = c.resource(api_path=cmdb_ci_esx_server_api)
+cmdb_sam_sw_install = c.resource(api_path=cmdb_sam_sw_install_api)
+cmn_location = c.resource(api_path=cmn_location_api)
+cmdb_ci_vm_instance = c.resource(api_path=cmdb_ci_vm_instance_api)
+cmdb_ci_netgear = c.resource(api_path=cmdb_ci_netgear_api)
+
+def set_computer_dataframe(data):
+    global computer_dataframe
+
+    computer_dataframe = pd.concat([computer_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+    return computer_dataframe
+
+def get_computer_dataframe():
+    return computer_dataframe
+
+def set_window_dataframe(data):
+    global window_dataframe
+
+    window_dataframe = pd.concat([window_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+    return window_dataframe
+
+def get_window_dataframe():
+    return window_dataframe
+
+def set_linux_dataframe(data):
+    global linux_dataframe
+
+    linux_dataframe = pd.concat([linux_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_linux_dataframe():
+    return linux_dataframe
+
+def set_esx_dataframe(data):
+    global esx_dataframe
+
+    esx_dataframe = pd.concat([esx_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_esx_dataframe():
+    return esx_dataframe
+
+def set_cloud_dataframe(data):
+    global cloud_dataframe
+
+    cloud_dataframe = pd.concat([cloud_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_cloud_dataframe():
+    return cloud_dataframe
+
+def set_vmware_dataframe(data):
+    global vmware_dataframe
+
+    vmware_dataframe = pd.concat([vmware_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_vmware_dataframe():
+    return vmware_dataframe
+
+def set_cisco_firewall_dataframe(data):
+    global cisco_firewall_dataframe
+
+    cisco_firewall_dataframe = pd.concat([cisco_firewall_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_cisco_firewall_dataframe():
+    return cisco_firewall_dataframe
+
+def set_palo_firewall_dataframe(data):
+    global palo_firewall_dataframe
+
+    palo_firewall_dataframe = pd.concat([palo_firewall_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_palo_firewall_dataframe():
+    return palo_firewall_dataframe
+
+def set_ip_firewall_dataframe(data):
+    global palo_firewall_dataframe
+
+    palo_firewall_dataframe = pd.concat([palo_firewall_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_ip_firewall_dataframe():
+    return palo_firewall_dataframe
+
+def set_ip_router_dataframe(data):
+    global ip_router_dataframe
+
+    ip_router_dataframe = pd.concat([ip_router_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_ip_router_dataframe():
+    return ip_router_dataframe
+
+def set_ip_switch_dataframe(data):
+    global ip_switch_dataframe
+
+    ip_switch_dataframe = pd.concat([ip_switch_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_ip_switch_dataframe():
+    return ip_switch_dataframe
+
+def set_netgear_dataframe(data):
+    global netgear_dataframe
+
+    netgear_dataframe = pd.concat([netgear_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_netgear_dataframe():
+    return netgear_dataframe
+
+def set_wireless_ap_dataframe(data):
+    global wireless_ap_dataframe
+
+    wireless_ap_dataframe = pd.concat([wireless_ap_dataframe, pd.DataFrame(pd.json_normalize(data))])
+
+def get_wireless_ap_dataframe():
+    return wireless_ap_dataframe
+
+cmdb_mapping = {
+    "cmdb_ci_computer" : set_computer_dataframe,
+    "cmdb_ci_win_server" : set_window_dataframe,
+    "cmdb_ci_linux_server" : set_linux_dataframe,
+    "cmdb_ci_esx_server" : set_esx_dataframe,
+    "cmdb_ci_vm_instance" : set_cloud_dataframe,
+    "cmdb_ci_vmware_instance" : set_vmware_dataframe,
+    "cmdb_ci_firewall_device_cisco" : set_cisco_firewall_dataframe,
+    "cmdb_ci_firewall_device_palo_alto" : set_palo_firewall_dataframe,
+    "cmdb_ci_ip_firewall" : set_ip_firewall_dataframe,
+    "cmdb_ci_ip_router" : set_ip_firewall_dataframe,
+    "cmdb_ci_ip_switch" : set_ip_switch_dataframe,
+    "cmdb_ci_netgear" : set_netgear_dataframe,
+    "cmdb_ci_wap_network" : set_wireless_ap_dataframe,
+}
+
+cisco_firewall_dataframe = pd.DataFrame()
+palo_firewall_dataframe = pd.DataFrame()
+ip_firewall_dataframe = pd.DataFrame()
+ip_router_dataframe = pd.DataFrame()
+ip_switch_dataframe = pd.DataFrame()
+netgear_dataframe = pd.DataFrame()
+wireless_ap_dataframe = pd.DataFrame()
 
 def encrypt_data(str_encrypt):
     if str_encrypt == None or str_encrypt == "":
@@ -151,7 +364,7 @@ def write_to_text_legend():
 
 	Low confidence:
 
-	Untrusted Operational = per MID server age of total days > 16 days" operational status = "Operational"""
+	Untrusted Operational = per MID server age of total days > 16 days" operational status = "Operational\n\n"""
     
     with open(f'{file_name}.txt', 'a+') as f:
     	f.write(template)

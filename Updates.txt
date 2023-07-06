@@ -41,7 +41,10 @@ Updates Needed for 05-24-2023
 	Location Discrep
 	Cloud Assets
 	Check Audit History and check present date vs last audit date by Jason Harmon
-	
+
+Updates Important
+	5 CI Report for Crowd
+	Outer join crowd not found in SNOW
 	
 	
 		

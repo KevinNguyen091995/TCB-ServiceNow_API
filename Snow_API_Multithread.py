@@ -32,7 +32,7 @@ def get_api_server_thread(limit):
 
         write_to_excel(sheet_name, dataframe.get(api_name))
         write_to_text_info(api_name, good, review, retired, software_installed, supported, location, managed_by, managed_by_group)
-        write_to_sql(api_name, good, review, retired, software_installed, location, managed_by_group)
+        #write_to_sql(api_name, good, review, retired, software_installed, location, managed_by_group)
 
 
     #Names of APIs currently used
@@ -77,7 +77,7 @@ def get_api_vm_thread(limit):
 
         write_to_excel(sheet_name, dataframe.get(api_name))
         write_to_text_info(api_name, good, review, retired, software_installed, supported, location, managed_by, managed_by_group)
-        write_to_sql(api_name, good, review, retired, software_installed, location, managed_by_group)
+        #write_to_sql(api_name, good, review, retired, software_installed, location, managed_by_group)
 
     for thread in range(total_threads):
         thread_array.append(threading.Thread(target=callback_thread, args=(get_api_asset, "cmdb_ci_vm_instance", (thread * limit), limit, thread+1, thread_lock)))
@@ -95,3 +95,45 @@ def get_api_vm_thread(limit):
 
     #VMWare Instances
     generate_report("VMWare", "cmdb_ci_vmware_instance")
+
+def get_api_netgear_thread(limit):
+    total_threads = 16
+    thread_array = []
+    thread_lock = threading.Lock()
+
+    def generate_report(sheet_name, api_name):
+        dataframe = {
+            "cmdb_ci_firewall_device_cisco" : get_cisco_firewall_dataframe(),
+            "cmdb_ci_firewall_device_palo_alto" : get_palo_firewall_dataframe(),
+            "cmdb_ci_ip_firewall" : get_ip_firewall_dataframe(),
+            "cmdb_ci_ip_router" : get_ip_firewall_dataframe(),
+            "cmdb_ci_ip_switch" :get_ip_switch_dataframe(),
+            "cmdb_ci_netgear" : get_netgear_dataframe(),
+            "cmdb_ci_wap_network" : get_wireless_ap_dataframe(),
+        }
+
+        good, review, retired = get_total_class_count_mapping(api_name)
+        software_installed, supported, location, managed_by, managed_by_group = get_total_field_count_mapping(api_name)
+
+        write_to_excel(sheet_name, dataframe.get(api_name))
+        write_to_text_info(api_name, good, review, retired, software_installed, supported, location, managed_by, managed_by_group)
+        #write_to_sql(api_name, good, review, retired, software_installed, location, managed_by_group)
+
+    for thread in range(total_threads):
+        thread_array.append(threading.Thread(target=callback_thread, args=(get_api_asset, "cmdb_ci_netgear", (thread * limit), limit, thread+1, thread_lock)))
+        sleep(.1)
+        thread_array[-1].start()
+
+    for join_thread in thread_array:
+        join_thread.join()
+
+    #Write Legend
+    write_to_text_legend()
+
+    generate_report("Cisco Firewall", "cmdb_ci_firewall_device_cisco")
+    generate_report("Palo Alto Firewall", "cmdb_ci_firewall_device_palo_alto")
+    generate_report("IP Firewall", "cmdb_ci_ip_firewall")
+    generate_report("IP Router", "cmdb_ci_ip_router")
+    generate_report("IP Switch", "cmdb_ci_ip_switch")
+    generate_report("Netgear", "cmdb_ci_netgear")
+    generate_report("Wireless APs", "cmdb_ci_wap_network")

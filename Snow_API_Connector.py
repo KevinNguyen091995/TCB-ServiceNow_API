@@ -1,52 +1,4 @@
-from Snow_API_Initial_Data import *
-
-def set_computer_dataframe(new_dataframe, data):
-    global computer_dataframe
-
-    computer_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
-
-def get_computer_dataframe():
-    return computer_dataframe
-
-def set_window_dataframe(new_dataframe, data):
-    global window_dataframe
-
-    window_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
-
-def get_window_dataframe():
-    return window_dataframe
-
-def set_linux_dataframe(new_dataframe, data):
-    global linux_dataframe
-
-    linux_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
-
-def get_linux_dataframe():
-    return linux_dataframe
-
-def set_esx_dataframe(new_dataframe, data):
-    global esx_dataframe
-
-    esx_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
-
-def get_esx_dataframe():
-    return esx_dataframe
-
-def set_cloud_dataframe(new_dataframe, data):
-    global cloud_dataframe
-
-    cloud_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
-
-def get_cloud_dataframe():
-    return cloud_dataframe
-
-def set_vmware_dataframe(new_dataframe, data):
-    global vmware_dataframe
-
-    vmware_dataframe = pd.concat([new_dataframe, pd.DataFrame(pd.json_normalize(data))])
-
-def get_vmware_dataframe():
-    return vmware_dataframe
+from Key_Functions_Modules import *
 
 def get_data_equals(api, query_builder_field = "", query_builder_search = ""):
     global data
@@ -121,21 +73,25 @@ def set_data_initial(response, api_table_name):
     # data['forward_dns'] = 0
     # data['reverse_dns'] = 0
 
-    if response['sys_class_name'] == "cmdb_ci_vm_instance" or response['sys_class_name'] == "cmdb_ci_vmware_instance":
+    if api_table_name == "cmdb_ci_vm_instance":
         data['vm_inst_id'] = response['vm_inst_id']
         data['object_id'] = response['object_id']
         data['state'] = response['state']
 
-    else:
+    elif api_table_name == "cmdb_ci_computer":
         encrypt_computer_name = encrypt_data(response['name'].replace("formerly: ", "").lower().encode())
         encrypt_default_gateway = encrypt_data(response['default_gateway'].lower().encode())
         encrypt_ip = encrypt_data(response['ip_address'].lower().encode())
         data['default_gateway'] = response['default_gateway']
         data['server_operating_system'] = response['os']
 
+    else:
+        encrypt_computer_name = encrypt_data(response['name'].replace("formerly: ", "").lower().encode())
+        encrypt_default_gateway = encrypt_data(response['default_gateway'].lower().encode())
+        encrypt_ip = encrypt_data(response['ip_address'].lower().encode())
+        data['default_gateway'] = response['default_gateway']
+
     return data
-
-
 
 #Subtract 2 dates
 def days_between(d1, d2):
@@ -252,6 +208,7 @@ async def get_count_vulnerability(entry_offset, thread_number, total_threads):
     end = time()
     print(f"Time Taken Entries for Thread {thread_number}: {int(end - start)} seconds")
 
+#GET API ASSET FUNCTION
 async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number, thread_lock):
     #FUNCTIONS
     def find_software_full(sys_class_name):
@@ -389,28 +346,31 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
             if data['managed_by_group'] is not None and data['managed_by_group'] != "":
                 update_field_count_mapping(response['sys_class_name'] + "_managed_by_group")
 
-    def compare_data(data, report_name, search):
+    def compare_data(data, report_name, search, criteria=False):
         report_dataframe = pd.read_csv(report_name)
 
         #IF GOOD RECORD
-        if good_record()\
-            and data[search] == 0:
-
+        if good_record() and\
+            data[search] == 0:
+                
                 #WRITE GOOD RECORDS NA SERVICENOW
-                if search == "crowdstrike_installed":
-                    write_file(f"{path}/SNOW_Only_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']}\n")
+                if search == "crowdstrike_installed" and criteria == True:
+                    write_file(f"{path}/SNOW_Only_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']} : {data['managed_by_group']}\n")
 
                 #NOT IN SNOW AND NOT FOUND IN COMPARABLE DATA Crowdstrike
-                if search == "crowdstrike_installed" and report_dataframe['Serial Number'].eq(data['serial_number']).sum() == 0:
-                    write_file(f"{path}/SNOW_AND_CROWD_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']}\n")
+                if search == "crowdstrike_installed" and \
+                (report_dataframe['Serial Number'].eq(data['serial_number']).sum() == 0 and \
+                report_dataframe['Hostname'].eq(data['computer_name']).sum() == 0):
+                    write_file(f"{path}/SNOW_AND_CROWD_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']} : {data['managed_by_group']}\n")
 
                 #WRITE GOOD RECORDS NA SERVICENOW
                 if search == "datadog_installed":
-                    write_file(f"{path}/SNOW_Only_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']}\n")
+                    write_file(f"{path}/SNOW_Only_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']} : {data['managed_by_group']}\n")
 
                 #NOT IN SNOW AND NOT FOUND IN COMPARABLE DATA Datadog
-                if search == "datadog_installed" and report_dataframe['server_name'].eq(data['computer_name']).sum() == 0:
-                    write_file(f"{path}/SNOW_AND_DataDog_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']}\n")
+                if search == "datadog_installed" and \
+                report_dataframe['server_name'].eq(data['computer_name']).sum() == 0:
+                    write_file(f"{path}/SNOW_AND_DataDog_{search}_{response['sys_class_name']}_{now_date}", f"{data['computer_name']} : {data['serial_number']} : {data['managed_by_group']}\n")
 
     #Dict
     data = dict()
@@ -477,42 +437,10 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                 #     data['reverse_dns'] = get_nslookup_reverse(data['ip_address'])
                 #     data['pingable'] = 0 if check_ping(data['ip_address']) == False else 1
 
-                #DIFFERENT DATAFRAME FOR EXCEL BASED ON CLASS NAME
-                if response['sys_class_name'] == "cmdb_ci_computer":
-                    if thread_lock.locked != True:
-                        thread_lock.acquire()
-                        set_computer_dataframe(computer_dataframe, data)
-                        thread_lock.release()
-
-                elif response['sys_class_name'] == "cmdb_ci_win_server":
-                    if thread_lock.locked != True:
-                        thread_lock.acquire()
-                        set_window_dataframe(window_dataframe, data)
-                        thread_lock.release()
-
-                elif response['sys_class_name'] == "cmdb_ci_linux_server":
-                    if thread_lock.locked != True:
-                        thread_lock.acquire()
-                        set_linux_dataframe(linux_dataframe, data)
-                        thread_lock.release()
-
-                elif response['sys_class_name'] == "cmdb_ci_esx_server":
-                    if thread_lock.locked != True:
-                        thread_lock.acquire()
-                        set_esx_dataframe(esx_dataframe, data)
-                        thread_lock.release()
-
-                elif response['sys_class_name'] == 'cmdb_ci_vm_instance':
-                    if thread_lock.locked != True:
-                        thread_lock.acquire()
-                        set_cloud_dataframe(cloud_dataframe, data)
-                        thread_lock.release()
-
-                elif response['sys_class_name'] == 'cmdb_ci_vmware_instance':
-                    if thread_lock.locked != True:
-                        thread_lock.acquire()
-                        set_vmware_dataframe(vmware_dataframe, data)
-                        thread_lock.release()
+                if thread_lock.locked != True and response['sys_class_name'] in cmdb_mapping.keys():
+                    thread_lock.acquire()
+                    cmdb_mapping.get(response['sys_class_name'])(data)
+                    thread_lock.release()
                     
                 #REVISES COUNTS BASED ON GOOD/BAD/RETIRED RECORDS
                 if (response['sys_class_name'] + "_good") not in class_count_mapping.keys():
@@ -530,11 +458,10 @@ async def get_api_asset(api_table_name, entry_offset, limit_count, thread_number
                     field_mapping_record_review()
 
                 #COMPARES Crowdstrike and DataDog reports for more accurate measures
-                if data['serial_number'] != ""\
-                    and data['serial_number'] is not None\
-                    and response['sys_class_name'] in compare_list:
-                    compare_data(data, "Crowdstrike_Reports/5393_hosts_2023-06-13T15_20_21Z.csv", "crowdstrike_installed")
-                    compare_data(data, "Datadog_Reports/2023-06-13_DataDog.csv", "datadog_installed")
+                if response['sys_class_name'] in compare_list:
+                    compare_data(data, "Crowdstrike_Reports/5599_hosts_2023-07-03T16_22_12Z.csv", "crowdstrike_installed")
+                    compare_data(data, "Datadog_Reports/2023-07-03_DataDog.csv", "datadog_installed")
+
             
         except Exception as e:
             print("Failed at loop response", "\n", e)
